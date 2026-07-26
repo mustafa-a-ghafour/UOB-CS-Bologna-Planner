@@ -32,14 +32,35 @@ async function exportTranscriptAsImage(elementId = "gradModalTranscriptContent",
             });
         }
 
+        // Force a consistent desktop-width render for the exported image
+        const EXPORT_WIDTH = 1100;
+        const origStyles = {
+            width: container.style.width,
+            maxWidth: container.style.maxWidth,
+            minWidth: container.style.minWidth,
+            position: container.style.position
+        };
+        container.style.width = `${EXPORT_WIDTH}px`;
+        container.style.maxWidth = `${EXPORT_WIDTH}px`;
+        container.style.minWidth = `${EXPORT_WIDTH}px`;
+
+        // Allow layout to recalculate
+        await new Promise(r => setTimeout(r, 100));
+
         const canvas = await html2canvas(container, {
             scale: 2,
             useCORS: true,
             backgroundColor: '#ffffff',
             logging: false,
-            windowWidth: container.scrollWidth,
+            windowWidth: EXPORT_WIDTH,
             windowHeight: container.scrollHeight
         });
+
+        // Restore original styles
+        container.style.width = origStyles.width;
+        container.style.maxWidth = origStyles.maxWidth;
+        container.style.minWidth = origStyles.minWidth;
+        container.style.position = origStyles.position;
 
         const imageURI = canvas.toDataURL("image/png");
         const downloadLink = document.createElement('a');

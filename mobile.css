@@ -217,6 +217,10 @@
         gap: 0.85rem;
     }
 
+    .transcript-preview-viewport {
+        padding: 1rem;
+    }
+
     .exportable-transcript-document {
         padding: 1rem;
     }

@@ -78,6 +78,21 @@ curriculumData.forEach(item => {
 });
 
 /**
+ * Check if a given course code is a prerequisite for any course
+ * that the student has NOT yet passed.
+ * If it IS a prerequisite for unpassed courses → must be forced.
+ * If it is NOT → can be safely delayed (optional retake).
+ */
+function isPrereqForFutureUnpassed(code) {
+    return curriculumData.some(c => {
+        // Only consider courses the student hasn't passed yet
+        if (simulationState.passedModules[c.code] !== null) return false;
+        // Check if our code is in this course's prerequisites
+        return c.prereq.includes(code);
+    });
+}
+
+/**
  * Custom In-App Modal Dialog Utilities
  */
 function showAppAlert(message, title = "تنبيه أكاديمي", icon = "⚠️") {
@@ -168,8 +183,7 @@ function getStageName(stageNum) {
         3: "المرحلة الثالثة",
         4: "المرحلة الرابعة",
         5: "المرحلة الخامسة (تأخير) ⚠️",
-        6: "المرحلة السادسة (الحد الأقصى) ⚠️",
-        7: "مترقين القيد 🚫"
+        6: "المرحلة السادسة (الحد الأقصى) ⚠️"
     };
     return names[stageNum] || `المرحلة ${stageNum}`;
 }
@@ -213,6 +227,10 @@ function initSimulation() {
 }
 
 function setupSemesterRegistration(sem) {
+    // Only these core courses are forced when failed or delayed,
+    // because they are foundational prerequisites for many later courses.
+    const FORCED_COURSE_CODES = ['CSC11001', 'CSC12105', 'CSC23110'];
+
     const retakesToRegister = [];
     simulationState.failedHistory.forEach(record => {
         const item = curriculumMap[record.code];
@@ -221,17 +239,60 @@ function setupSemesterRegistration(sem) {
 
         if (isSameSeason && !isAlreadyPassed) {
             if (!retakesToRegister.some(r => r.code === record.code)) {
-                retakesToRegister.push({
-                    code: record.code,
-                    outcome: 'pass',
-                    isRetake: true,
-                    isAdded: true
-                });
+                const mustForce = FORCED_COURSE_CODES.includes(record.code);
+                if (mustForce) {
+                    retakesToRegister.push({
+                        code: record.code,
+                        outcome: 'pass',
+                        isRetake: true,
+                        isAdded: true,
+                        isForced: true
+                    });
+                }
             }
         }
     });
 
+    // Force-add delayed courses from PREVIOUS semesters that were never taken
+    // (not failed, just skipped due to unmet prereqs at the time).
+    // Only core courses in the whitelist are forced.
+    const delayedForced = [];
+    curriculumData.forEach(c => {
+        if (c.sem >= sem) return; // only previous semesters
+        const isAlreadyPassed = simulationState.passedModules[c.code] !== null;
+        if (isAlreadyPassed) return;
+        const isSameSeason = (c.sem % 2 !== 0) === (sem % 2 !== 0);
+        if (!isSameSeason) return;
+        // Skip if already in retakes list
+        if (retakesToRegister.some(r => r.code === c.code)) return;
+        // Skip special courses
+        if ((c.code === 'UOB105' || c.code === 'UOB202') && sem < 3) return;
+
+        const prereqsMet = c.prereq.every(pCode => {
+            const pSem = simulationState.passedModules[pCode];
+            return pSem !== null && pSem < sem;
+        });
+
+        if (prereqsMet && FORCED_COURSE_CODES.includes(c.code)) {
+            delayedForced.push({
+                code: c.code,
+                outcome: 'pass',
+                isRetake: false,
+                isAdded: true,
+                isForced: true
+            });
+        }
+    });
+
     let currentEcts = retakesToRegister.reduce((sum, r) => sum + curriculumMap[r.code].ects, 0);
+    // Add delayed forced within ECTS cap
+    const delayedForcedFiltered = [];
+    delayedForced.forEach(d => {
+        if (currentEcts + curriculumMap[d.code].ects <= 30) {
+            delayedForcedFiltered.push(d);
+            currentEcts += curriculumMap[d.code].ects;
+        }
+    });
 
     const regularToRegister = [];
     const regularCandidates = curriculumData.filter(c => c.sem === sem);
@@ -255,7 +316,7 @@ function setupSemesterRegistration(sem) {
         }
     });
 
-    simulationState.activeRegistered = [...retakesToRegister, ...regularToRegister];
+    simulationState.activeRegistered = [...retakesToRegister, ...delayedForcedFiltered, ...regularToRegister];
 }
 
 function computeRegistrationPanels(sem) {
@@ -352,12 +413,33 @@ function renderSimulationUI() {
     } else {
         simulationState.isDismissed = false;
         if (dismissalBanner) dismissalBanner.style.display = 'none';
-        if (btnAdvanceText) btnAdvanceText.textContent = `الإنتقال إلى ${nextSemTitle}`;
-        if (btnAdvance) {
-            btnAdvance.disabled = false;
-            btnAdvance.style.background = 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)';
-            btnAdvance.style.cursor = 'pointer';
-            btnAdvance.style.opacity = '1';
+
+        // Check if all remaining unpassed courses are registered and set to pass
+        const unpassedCodes = curriculumData
+            .filter(c => simulationState.passedModules[c.code] === null)
+            .map(c => c.code);
+        const registeredPassCodes = simulationState.activeRegistered
+            .filter(r => r.outcome === 'pass')
+            .map(r => r.code);
+        const willCompleteAll = unpassedCodes.length > 0 &&
+            unpassedCodes.every(code => registeredPassCodes.includes(code));
+
+        if (willCompleteAll) {
+            if (btnAdvanceText) btnAdvanceText.textContent = `🎓 إنهاء المسار الدراسي`;
+            if (btnAdvance) {
+                btnAdvance.disabled = false;
+                btnAdvance.style.background = 'linear-gradient(135deg, #15803d 0%, #059669 100%)';
+                btnAdvance.style.cursor = 'pointer';
+                btnAdvance.style.opacity = '1';
+            }
+        } else {
+            if (btnAdvanceText) btnAdvanceText.textContent = `الإنتقال إلى ${nextSemTitle}`;
+            if (btnAdvance) {
+                btnAdvance.disabled = false;
+                btnAdvance.style.background = 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)';
+                btnAdvance.style.cursor = 'pointer';
+                btnAdvance.style.opacity = '1';
+            }
         }
     }
 
@@ -460,26 +542,44 @@ function renderRegisteredGrid() {
         const isFail = item.outcome === 'fail';
 
         const isYellowCard = item.isRetake || item.isAdded;
+        // Forced: either a retake prereq or a delayed prereq course
+        const isForcedRetake = item.isRetake && item.isForced;
+        const isForcedDelayed = !item.isRetake && item.isForced;
+        const isOptionalRetake = item.isRetake && !item.isForced;
+        const isAnyForced = isForcedRetake || isForcedDelayed;
 
         const card = document.createElement('div');
         card.className = `reg-mod-card ${isYellowCard ? 'is-retake-module' : ''}`;
 
+        let retakeLabelText = '';
+        if (isForcedRetake) {
+            retakeLabelText = '(معادة - إجبارية ⛓️)';
+        } else if (isForcedDelayed) {
+            retakeLabelText = '(متأخرة - إجبارية ⛓️)';
+        } else if (isOptionalRetake) {
+            retakeLabelText = '(معادة - اختيارية)';
+        } else if (item.isAdded) {
+            retakeLabelText = '(مضافة)';
+        }
+
         card.innerHTML = `
             <div class="reg-top">
-                <span class="reg-ects">${unitsFormatted} ${isYellowCard ? '(مضافة/معادة)' : ''}</span>
+                <span class="reg-ects">${unitsFormatted} ${retakeLabelText}</span>
                 <span class="pass-default-badge ${isFail ? 'hidden' : ''}">✓ مستوفاة</span>
             </div>
             <div>
                 <div class="reg-title-ar">${course.nameAr}</div>
             </div>
             <div class="origin-tag-badge">من ${originText}</div>
-            ${item.isRetake ? '<div class="repeat-warning-pill">⚠️ مادة معادة: الضغط على الرسوب يضيف سنة إضافية ثانية</div>' : ''}
+            ${isForcedRetake ? '<div class="repeat-warning-pill">⚠️ مادة معادة إجبارية: تعتمد عليها مواد لاحقة. الرسوب بها يضيف سنة إضافية ثانية</div>' : ''}
+            ${isForcedDelayed ? '<div class="repeat-warning-pill" style="background:rgba(217,119,6,0.1);color:#92400e;border-color:rgba(217,119,6,0.25);">⛓️ مادة متأخرة إجبارية: تعتمد عليها مواد لاحقة ويجب تسجيلها</div>' : ''}
+            ${isOptionalRetake ? '<div class="repeat-warning-pill" style="background:rgba(59,130,246,0.12);color:#2563eb;border-color:rgba(59,130,246,0.25);">ℹ️ مادة معادة اختيارية: لا تعتمد عليها مواد لاحقة، يمكنك إزالتها وتأجيلها</div>' : ''}
             <div class="outcome-selector-group">
                 <button class="single-fail-btn ${isFail ? 'active' : ''}">
                     ${isFail ? '🔴 رسوب تكويني (مُفعل)' : '🔴 رسوب تكويني'}
                 </button>
             </div>
-            ${item.isRetake ? '' : '<button class="btn-remove-module">إزالة 🗑️</button>'}
+            ${isAnyForced ? '' : '<button class="btn-remove-module">إزالة 🗑️</button>'}
         `;
 
         const btnFail = card.querySelector('.single-fail-btn');
@@ -799,15 +899,35 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
         descriptionText = `أكمل الكورس واستوفى ${formatUnits(earnedEctsInSem)}، وحصل رسوب في: (${failedModuleNames.join('، ')}). ورُتبت سنة إضافية.`;
     }
 
+    const currentStage = Math.ceil(semNum / 2);
+    const stageLabels = { 1: 'م1', 2: 'م2', 3: 'م3', 4: 'م4' };
+
     let chipsHTML = '';
     semHistory.forEach(item => {
         const course = curriculumMap[item.code];
         const isPass = item.outcome === 'pass';
-        const chipClass = isPass ? 'chip-pass' : 'chip-fail';
-        const statusIcon = isPass ? '✓' : '🔴 رسوب';
+        const courseOrigStage = Math.ceil(course.sem / 2);
+        const isForeign = courseOrigStage !== currentStage;
+
+        let chipClass, statusIcon, originTag;
+
+        if (!isPass) {
+            chipClass = 'chip-fail';
+            statusIcon = '🔴 رسوب';
+            originTag = isForeign ? `<span class="chip-origin-tag">${stageLabels[courseOrigStage] || 'م' + courseOrigStage}</span>` : '';
+        } else if (isForeign) {
+            chipClass = 'chip-pass-foreign';
+            statusIcon = '✓';
+            originTag = `<span class="chip-origin-tag">${stageLabels[courseOrigStage] || 'م' + courseOrigStage}</span>`;
+        } else {
+            chipClass = 'chip-pass';
+            statusIcon = '✓';
+            originTag = '';
+        }
+
         chipsHTML += `
             <span class="module-chip ${chipClass}">
-                ${statusIcon} ${course.nameAr} (${course.ects}) ${item.isRetake ? '[معادة]' : ''}
+                ${statusIcon} ${course.nameAr} (${course.ects}) ${item.isRetake ? '[معادة]' : ''} ${originTag}
             </span>
         `;
     });

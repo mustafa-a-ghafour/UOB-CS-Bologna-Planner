@@ -753,6 +753,7 @@ async function advanceToNextSemester() {
 
     setupSemesterRegistration(simulationState.currentSem);
     renderSimulationUI();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /**

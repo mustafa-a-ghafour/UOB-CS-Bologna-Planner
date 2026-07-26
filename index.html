@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>محاكي مسار بولونيا | جامعة بغداد - قسم علوم الحاسوب</title>
+    <meta name="description" content="محاكي أكاديمي ذكي وبسيط لنظام بولونيا في جامعة بغداد.">
+
+    <!-- Google Fonts: Cairo & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="mobile.css">
+</head>
+
+<body>
+    <!-- Top Slim Total ECTS Progress Strip (Hidden on Welcome Screen) -->
+    <div class="top-units-slim-strip" id="topSlimStrip" style="display: none;">
+        <div class="strip-container">
+            <span class="strip-label">🎓 مجموع الوحدات:</span>
+            <span class="strip-value"><strong id="valEarnedEcts">0</strong> / 240</span>
+            <div class="strip-track">
+                <div class="strip-fill" id="barEarnedEcts" style="width: 0%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-wrapper">
+
+        <!-- Top Header Navbar (Hidden on Welcome Screen) -->
+        <header class="app-header compact-navbar" id="appHeader" style="display: none;">
+            <div class="header-container">
+                
+                <!-- Brand Info -->
+                <div class="brand-block">
+                    <div class="brand-info">
+                        <div class="univ-badge">
+                            <span class="badge-dot"></span>
+                            <span>جامعة بغداد • علوم الحاسوب</span>
+                        </div>
+                        <div class="brand-title-row">
+                            <h1 class="brand-title">محاكي مسار بولونيا</h1>
+                            <button id="btnShowHelp" class="btn-help-nav">
+                                <span>💡 التعليمات والقوانين</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Actions & Metrics Bar -->
+                <div class="navbar-actions-block">
+                    <!-- Compact Extra Academic Years Metric -->
+                    <div class="navbar-compact-metric">
+                        <span class="metric-compact-icon">⏱️</span>
+                        <div class="metric-compact-text">
+                            <span class="metric-compact-label">السنوات الإضافية:</span>
+                            <span class="metric-compact-value" id="valExtraYears">0 سنة (منتظم)</span>
+                        </div>
+                        <span class="metric-compact-tag" id="valFailedHistory">0 رسوب</span>
+                    </div>
+                </div>
+
+            </div>
+        </header>
+
+        <!-- Academic Dismissal Warning Banner -->
+        <div id="dismissalBanner" class="dismissal-alert-banner" style="display: none;">
+            <div class="dismissal-content">
+                <span class="dismissal-icon">🚫</span>
+                <div>
+                    <h3>تم ترقين القيد!</h3>
+                    <p id="dismissalReasonText">تجاوز الحد الأقصى للسنين الدراسية (6 سنوات كحد أقصى).</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Standalone Centered Title Outside the Welcome Card Box -->
+        <div id="welcomeTopHeader" class="welcome-top-standalone-header">
+            <h1 class="welcome-standalone-title">🎓 مرحباً بك في المحاكي الأكاديمي</h1>
+        </div>
+
+        <!-- Welcome Landing Page View -->
+        <section id="welcomeScreen" class="welcome-screen-card">
+            <div class="welcome-hero-banner">
+                <div class="welcome-hero-content">
+                    <h2 class="welcome-hero-title">دليلك التفاعلي لفهم مسار نظام بولونيا الأكاديمي</h2>
+                    <p class="welcome-hero-desc">
+                        تصميم تفاعلي خاص لطلبة قسم علوم الحاسوب في جامعة بغداد لمحاكاة الانتقال بين الكورسات، حساب وحدات الـ ECTS، وفهم قوانين الرسوب والسنوات الإضافية بدقة.
+                    </p>
+                </div>
+            </div>
+
+            <!-- How System Works Grid -->
+            <div class="welcome-grid-container">
+                <h3 class="welcome-section-heading">📌 آلية عمل المحاكي ونظام بولونيا:</h3>
+                
+                <div class="welcome-features-grid">
+                    <div class="welcome-feature-card">
+                        <div class="feature-icon-wrapper">📘</div>
+                        <h4>نظام ECTS والوحدات</h4>
+                        <p>يتكون كل كورس دراسي من 30 وحدة ECTS بمجموع 240 وحدة للتخرج طيلة 4 سنوات دراسية (8 كورسات).</p>
+                    </div>
+
+                    <div class="welcome-feature-card">
+                        <div class="feature-icon-wrapper">🔄</div>
+                        <h4>محاكاة النجاح والرسوب</h4>
+                        <p>محاكاة فعلية دقيقة للخيارات المختلفة بين النجاح والرسوب في المواد، تعكس التأثير الأكاديمي الفوري على المسار الدراسي والسنوات الإضافية.</p>
+                    </div>
+
+                    <div class="welcome-feature-card">
+                        <div class="feature-icon-wrapper">📜</div>
+                        <h4>السجل الوصفي الشامل</h4>
+                        <p>يقوم المحاكي بتوليد سجل أكاديمي وصفي منظم لكل مرحلة بعامودين للكورس الأول والثاني مع إمكانية استخراجه كصورة.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transferred Notes & Rules Boxes -->
+            <div class="welcome-notes-wrapper">
+                <h3 class="welcome-section-heading">⚠️ الملاحظات والقواعد الأكاديمية الهامة:</h3>
+
+                <!-- Blue Advisor Tip Box -->
+                <div class="advisor-tip-box">
+                    <span class="tip-icon">💡</span>
+                    <span>يعتبر الطالب ناجحاً تكوينيًا في كافة المواد افتراضياً، إلا إذا تم الضغط على زر "رسوب تكويني".</span>
+                </div>
+
+                <!-- Red Danger Dismissal Rule Box -->
+                <div class="danger-tip-box">
+                    <span class="tip-icon">🚨</span>
+                    <span>أي رسوب تكويني يضيف سنة دراسية إضافية، وتكرار الرسوب بمادة معادة يضيف سنة أخرى. الحد الأقصى 6 سنوات دراسية ثم يرقن القيد.</span>
+                </div>
+            </div>
+
+            <!-- Welcome Screen Primary Action Button -->
+            <div class="welcome-action-bar">
+                <button id="btnStartSimulation" class="btn-start-hero">
+                    <span>🚀 أبدأ المحاكاة الآن</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Workspace (Hidden on welcome screen start) -->
+        <main class="workspace-main" id="mainWorkspace" style="display: none;">
+            
+            <!-- Active Semester Workspace Card -->
+            <div class="workspace-card">
+                
+                <!-- Full Width Stage Header Banner -->
+                <div class="stage-fullwidth-banner">
+                    <div class="stage-banner-top">
+                        <div class="stage-banner-titles">
+                            <span class="stage-box-tag">📍 الكورس الحالي</span>
+                            <h2 id="builderSemHeading" class="stage-box-title">المرحلة الأولى - الكورس الأول</h2>
+                        </div>
+                        <span class="stage-box-subpill" id="activeSemesterSub">سنة 1 • كورس 1</span>
+                    </div>
+                </div>
+
+                <!-- Embedded Course Units Progress Bar Strip (Starts under Stage Banner Title, Sticky across Workspace) -->
+                <div class="course-units-progress-box">
+                    <div class="units-progress-header">
+                        <span class="widget-label">حالة عدد الوحدات في هذا الكورس:</span>
+                        <span class="widget-badge" id="registeredEctsBadge">30 / 30 وحدة</span>
+                    </div>
+                    <div class="units-progress-track">
+                        <div class="units-progress-fill" id="barCourseEcts" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <!-- Registered Modules Grid Section -->
+                <div class="section-container">
+                    <div class="section-title-row">
+                        <div class="title-with-icon" style="align-items: flex-start;">
+                            <span class="sec-icon">📝</span>
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                                    <h3>مواد الكورس الحالي</h3>
+                                    <span class="badge-count" id="registeredCountTag">6 مواد</span>
+                                </div>
+                                <p id="builderSemSubtitle" class="section-subtitle-text">جميع المواد ناجح فيها، اضغط على زر الرسوب للمواد الراسب فيها فقط</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="registered-grid" id="registeredModulesGrid">
+                        <!-- Dynamic Module Cards -->
+                    </div>
+                </div>
+
+                <!-- Dual Registration Hub (Available vs Blocked) -->
+                <div class="dual-hub-grid">
+                    
+                    <!-- Available Modules Panel -->
+                    <div class="hub-panel panel-available">
+                        <div class="panel-top-bar">
+                            <div class="panel-title-group">
+                                <span class="panel-icon-circle">✅</span>
+                                <h3>مواد متاح إضافتها</h3>
+                            </div>
+                            <span class="panel-tag-count" id="availableCountTag">0 مواد</span>
+                        </div>
+
+                        <div class="panel-content-body" id="availableModulesList">
+                            <!-- Dynamic Available Items -->
+                        </div>
+                    </div>
+
+                    <!-- Blocked Modules Panel (المواد غير المتاحة) -->
+                    <div class="hub-panel panel-blocked">
+                        <div class="panel-top-bar">
+                            <div class="panel-title-group">
+                                <span class="panel-icon-circle">🔒</span>
+                                <h3>المواد الراسب فيها</h3>
+                            </div>
+                            <span class="panel-tag-count" id="blockedCountTag">0 مواد</span>
+                        </div>
+
+                        <!-- Side-by-Side Vertical Columns -->
+                        <div class="blocked-columns-wrapper">
+                            
+                            <!-- Course 1 Column -->
+                            <div class="blocked-column-card" id="subgroupCourse1">
+                                <div class="column-header">
+                                    <span class="column-title">📘 كورس أول</span>
+                                </div>
+                                <div class="column-items-body" id="blockedListCourse1">
+                                    <!-- Dynamic Items -->
+                                </div>
+                            </div>
+
+                            <!-- Course 2 Column -->
+                            <div class="blocked-column-card" id="subgroupCourse2">
+                                <div class="column-header">
+                                    <span class="column-title">📗 كورس ثاني</span>
+                                </div>
+                                <div class="column-items-body" id="blockedListCourse2">
+                                    <!-- Dynamic Items -->
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Dynamic Step Advance Action Button -->
+                <div class="workspace-footer-bar">
+                    <button id="btnAdvanceSemester" class="btn-advance-action" style="width: 100%; justify-content: center;">
+                        <span id="btnAdvanceText">الإنتقال إلى المرحلة الأولى - الكورس الثاني</span>
+                        <span class="btn-arrow">⬅️</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Academic Transcript History Log -->
+            <section class="transcript-section">
+                <div class="transcript-title-bar">
+                    <div class="title-with-icon">
+                        <span class="sec-icon">📜</span>
+                        <h2>السجل الأكاديمي</h2>
+                    </div>
+                    
+                    <div class="transcript-actions-group">
+                        <!-- Open Full Page Transcript Modal Button -->
+                        <button id="btnOpenFullTranscriptModal" class="btn-modal-primary">
+                            <span>📄 عرض السجل بصفحة مستقلة</span>
+                        </button>
+
+                        <!-- Reset Button -->
+                        <button id="btnRestartProcess" class="btn-reset-simulation">
+                            <span class="btn-icon">🔄</span>
+                            <span>مسار جديد</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="transcript-table-container" id="transcriptTableWrapper">
+                    <!-- Dynamic Transcript Table -->
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- Dark Premium Footer Positioned at Absolute Bottom -->
+    <footer class="system-footer">
+        <p>إعداد مصطفى أحمد غفور</p>
+    </footer>
+
+    <!-- Custom In-App Interactive Modal Dialog Container -->
+    <div id="customAppModal" class="app-modal-overlay" style="display: none;">
+        <div class="app-modal-card">
+            <div class="app-modal-icon" id="modalIcon">⚠️</div>
+            <h3 class="app-modal-title" id="modalTitle">تنبيه أكاديمي</h3>
+            <p class="app-modal-message" id="modalMessage">تفاصيل التنبيه...</p>
+            <div class="app-modal-actions" id="modalActions">
+                <button id="btnModalConfirm" class="btn-modal-primary">حسناً</button>
+                <button id="btnModalCancel" class="btn-modal-secondary" style="display: none;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full-Page Dedicated Graduation Academic Transcript Modal -->
+    <div id="graduationTranscriptModal" class="fullpage-transcript-overlay" style="display: none;">
+        <div class="fullpage-transcript-card">
+            
+            <!-- Sticky Action Toolbar Header -->
+            <div class="transcript-modal-toolbar">
+                <div class="toolbar-brand">
+                    <span class="toolbar-icon">📜</span>
+                    <span>السجل الأكاديمي الشامل (نظام بولونيا)</span>
+                </div>
+                <div class="toolbar-actions">
+                    <button id="btnExportImage" class="btn-export-png" onclick="exportTranscriptAsImage('gradModalTranscriptContent')">
+                        📸 تحميل السجل كصورة (PNG)
+                    </button>
+                    <button id="btnCloseGradModal" class="btn-close-modal">
+                        ❌ إغلاق المعاينة
+                    </button>
+                </div>
+            </div>
+
+            <!-- Exportable Transcript Document Sheet -->
+            <div id="gradModalTranscriptContent" class="exportable-transcript-document">
+                
+                <!-- Clean Document Header -->
+                <div class="official-doc-header">
+                    <div class="doc-header-top">
+                        <div class="doc-title-block">
+                            <h2>السجل الأكاديمي الشامل</h2>
+                            <h3>علوم الحاسوب • نظام بولونيا الأكاديمي</h3>
+                            <p class="doc-sub-text">عرض كامل لكافة المراحل والكورسات الدراسية</p>
+                        </div>
+                    </div>
+
+                    <div class="doc-stats-summary-bar">
+                        <div class="doc-stat-item">
+                            <span class="stat-lbl">مجموع الوحدات المستوفاة</span>
+                            <span class="stat-val" id="gradDocEarnedEcts">240 / 240 ECTS</span>
+                        </div>
+                        <div class="doc-stat-item">
+                            <span class="stat-lbl">السنوات الدراسية الإضافية</span>
+                            <span class="stat-val" id="gradDocExtraYears">0 سنة</span>
+                        </div>
+                        <div class="doc-stat-item">
+                            <span class="stat-lbl">الحالة الأكاديمية</span>
+                            <span class="stat-val status-pass-tag" id="gradDocStatusTag">🎓 خريج</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stage-by-Stage 2-Column Transcript Body -->
+                <div id="gradDocBody" class="doc-transcript-body">
+                    <!-- Rendered Stage Blocks -->
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="export-transcript.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -922,6 +922,246 @@ body {
     text-decoration: underline;
 }
 
+/* Red Fail Impact Banner under single-fail-btn */
+.fail-impact-banner {
+    background: #fff1f2;
+    border: 1.5px solid #fca5a5;
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.85rem;
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: #991b1b;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    animation: fadeIn 0.25s ease-out;
+}
+
+.fail-impact-banner.muted {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #475569;
+}
+
+.fail-impact-title {
+    font-weight: 800;
+    color: #be123c;
+    line-height: 1.4;
+}
+
+.fail-impact-list {
+    margin: 0;
+    padding-right: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.fail-impact-list li {
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.prereq-tag {
+    font-size: 0.72rem;
+    color: #c2410c;
+    font-weight: 800;
+}
+
+/* Indirect Dependencies Collapsible Toggle Button & Wrapper */
+.indirect-toggle-wrapper {
+    margin-top: 0.5rem;
+    padding-top: 0.4rem;
+    border-top: 1px dashed rgba(239, 68, 68, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.btn-toggle-indirect {
+    background: #fef3c7;
+    border: 1.5px solid #fde047;
+    color: #92400e;
+    padding: 0.32rem 0.65rem;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: var(--ease-smooth);
+    width: fit-content;
+}
+
+.btn-toggle-indirect:hover {
+    background: #fde047;
+    color: #78350f;
+    box-shadow: 0 2px 8px rgba(234, 179, 8, 0.2);
+}
+
+.info-circle-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #92400e;
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 900;
+    font-style: normal;
+}
+
+.indirect-collapsible-box {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1.5px solid #fde047;
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.85rem;
+    margin-top: 0.2rem;
+    font-size: 0.78rem;
+    color: #854d0e;
+    animation: fadeIn 0.25s ease-out;
+}
+
+
+/* Yellow Box for future modules that can be taken normally after passing prerequisite */
+.yellow-pass-box {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1.5px solid #fde047;
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.85rem;
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: #854d0e;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    box-shadow: 0 2px 8px rgba(234, 179, 8, 0.12);
+    animation: fadeIn 0.25s ease-out;
+}
+
+.yellow-box-title {
+    font-weight: 800;
+    color: #92400e;
+    line-height: 1.4;
+}
+
+.yellow-box-list {
+    margin: 0;
+    padding-right: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.yellow-box-list li {
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.yellow-box-footer-note {
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: #92400e;
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed rgba(217, 119, 6, 0.3);
+    line-height: 1.45;
+}
+
+.normal-pass-tag,
+.indirect-tag {
+    font-size: 0.72rem;
+    color: #b45309;
+    font-weight: 800;
+}
+
+
+
+/* 7 ECTS Available Notice */
+.available-7ects-notice {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    border: 1.5px solid #38bdf8;
+    color: #0369a1;
+    padding: 0.6rem 0.85rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+/* Available Modules Delay Warning Card */
+.available-delay-warning {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1.5px solid #fde047;
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.75rem;
+    margin-top: 0.5rem;
+    font-size: 0.76rem;
+    color: #854d0e;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    width: 100%;
+}
+
+.delay-warning-title {
+    font-weight: 800;
+    color: #92400e;
+    line-height: 1.4;
+}
+
+.delay-warning-list {
+    margin: 0;
+    padding-right: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.delay-warning-list li {
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.tag-direct {
+    color: #dc2626;
+    font-weight: 800;
+}
+
+.tag-indirect {
+    color: #b45309;
+    font-weight: 800;
+}
+
+.delay-warning-footer {
+    font-weight: 800;
+    color: #b91c1c;
+    margin-top: 0.3rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed rgba(220, 38, 38, 0.25);
+    font-size: 0.74rem;
+    line-height: 1.4;
+}
+
+
+/* Research Methodology Advice for Semester 6 */
+.research-methodology-advice {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1.5px solid #fde047;
+    color: #92400e;
+    padding: 0.5rem 0.8rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.76rem;
+    font-weight: 800;
+    margin-top: 0.4rem;
+    line-height: 1.45;
+}
+
+
 /* --------------------------------------------------------------------------
    4. Dual Hub Grid: Available vs Blocked (Side-by-Side Vertical Columns)
    -------------------------------------------------------------------------- */
@@ -1495,99 +1735,276 @@ body {
     background: rgba(255, 255, 255, 0.25);
 }
 
-/* Scrollable Document Preview Area */
+/* Scrollable Document Preview Area (Solid White Background Option) */
 .transcript-preview-viewport {
     flex: 1;
     overflow-y: auto;
     overflow-x: auto;
-    padding: 2rem;
-    background: #334155;
-    background-image: 
-        radial-gradient(circle at 20% 50%, rgba(51, 65, 85, 0.5) 0%, transparent 50%),
-        radial-gradient(circle at 80% 50%, rgba(30, 41, 59, 0.5) 0%, transparent 50%);
+    padding: 2rem 1.5rem;
+    background: #f8fafc;
+    display: flex;
+    justify-content: center;
 }
 
-/* Printable Document Sheet - Paper Preview */
-.exportable-transcript-document {
-    background: #ffffff;
-    padding: 2.5rem;
+/* Printable Document Sheet - Mobile Screen Portrait Format (480px Width) */
+.exportable-transcript-document-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    max-width: 1100px;
+    gap: 2.5rem;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
     margin: 0 auto;
-    border-radius: 4px;
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.15),
-        0 12px 40px rgba(0, 0, 0, 0.25),
-        0 0 0 1px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
 }
+
+.exportable-transcript-page {
+    width: 100%;
+    max-width: 480px;
+    height: auto;
+    box-sizing: border-box;
+    background: #ffffff;
+    padding: 1.5rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    border-radius: 12px;
+    box-shadow:
+        0 6px 24px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+    overflow: visible;
+    position: relative;
+}
+
+.stage-landscape-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.stage-courses-columns {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.page-badge-pill {
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 0.28rem 0.85rem;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+}
+
+.page-break-divider {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 800;
+    padding: 0.5rem 0;
+    border-top: 2px dashed #cbd5e1;
+    width: 100%;
+}
+
+
+
+/* Vertical Module Stack for Mobile Portrait */
+.sem-modules-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.transcript-module-row {
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 0.4rem 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.transcript-module-row.chip-pass {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+
+.transcript-module-row.chip-pass-foreign {
+    border-color: #fde68a;
+    background: #fefce8;
+}
+
+.transcript-module-row.chip-fail {
+    border-color: #fca5a5;
+    background: #fff1f2;
+}
+
+.mod-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    gap: 0.25rem;
+}
+
+.mod-row-title {
+    color: var(--text-primary);
+    font-weight: 800;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mod-row-ects {
+    font-size: 0.64rem;
+    font-weight: 900;
+    color: var(--brand-sky);
+    background: rgba(2, 132, 199, 0.08);
+    padding: 0.04rem 0.3rem;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.mod-row-details {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.64rem;
+    flex-wrap: wrap;
+}
+
+.mod-row-status {
+    font-weight: 800;
+    font-size: 0.64rem;
+}
+
+.chip-pass .mod-row-status {
+    color: #15803d;
+}
+
+.chip-pass-foreign .mod-row-status {
+    color: #92400e;
+}
+
+.chip-fail .mod-row-status {
+    color: #be123c;
+}
+
+.transcript-module-row.chip-planned {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.chip-planned .mod-row-status {
+    color: #64748b;
+}
+
+.course-column-card.is-planned-card {
+    background: #fafafa;
+    border-style: dashed;
+}
+
+
+
+.mod-row-origin {
+    font-size: 0.65rem;
+    font-weight: 800;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde047;
+    padding: 0.05rem 0.35rem;
+    border-radius: 3px;
+}
+
+.chip-retake-tag, .chip-added-tag {
+    font-size: 0.65rem;
+    color: #d97706;
+    font-weight: 800;
+}
+
 
 .official-doc-header {
-    border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 1.5rem;
+    border-bottom: 1.5px solid #e2e8f0;
+    padding-bottom: 0.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1.2rem;
+    gap: 0.5rem;
 }
 
 .doc-header-top {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .doc-title-block h2 {
-    font-size: 1.6rem;
+    font-size: 1.15rem;
     font-weight: 900;
     color: #0f172a;
+    margin: 0;
+    line-height: 1.2;
 }
 
 .doc-title-block h3 {
-    font-size: 1.15rem;
+    font-size: 0.78rem;
     font-weight: 800;
     color: var(--brand-sky);
-    margin-top: 0.2rem;
+    margin-top: 0.15rem;
+    line-height: 1.2;
 }
 
 .doc-sub-text {
-    font-size: 0.85rem;
+    font-size: 0.72rem;
     color: var(--text-muted);
-    margin-top: 0.3rem;
+    margin-top: 0.15rem;
 }
 
 .doc-stats-summary-bar {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
     background: #f8fafc;
-    border: 1.5px solid #e2e8f0;
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.4rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.45rem 0.75rem;
 }
 
 .doc-stat-item {
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
+    gap: 0.1rem;
 }
 
 .stat-lbl {
-    font-size: 0.78rem;
+    font-size: 0.68rem;
     font-weight: 700;
     color: var(--text-muted);
 }
 
 .stat-val {
-    font-size: 1.05rem;
+    font-size: 0.88rem;
     font-weight: 900;
     color: var(--text-primary);
 }
 
+
 .status-pass-tag {
     color: #15803d;
 }
+
 
 .status-pending-tag {
     color: #0284c7;
@@ -1716,6 +2133,21 @@ body {
     color: var(--text-secondary);
     transition: var(--ease-smooth);
 }
+
+/* Native Mobile Portrait Viewport Formatting */
+@media (max-width: 540px) {
+    .transcript-preview-viewport {
+        padding: 0.8rem 0.5rem;
+    }
+
+    .exportable-transcript-page {
+        padding: 1.2rem 1rem;
+        border-radius: 8px;
+    }
+}
+
+
+
 
 .btn-modal-secondary:hover {
     background: #e2e8f0;

@@ -93,6 +93,92 @@ function isPrereqForFutureUnpassed(code) {
 }
 
 /**
+ * Find all downstream courses in the curriculum that depend on a given course code
+ * (directly or through a prerequisite chain).
+ */
+function getDownstreamDependencies(courseCode) {
+    const dependentCodes = new Set();
+    
+    function findDependents(targetCode) {
+        curriculumData.forEach(c => {
+            if (c.prereq.includes(targetCode) && !dependentCodes.has(c.code)) {
+                dependentCodes.add(c.code);
+                findDependents(c.code);
+            }
+        });
+    }
+    
+    findDependents(courseCode);
+    return Array.from(dependentCodes).map(code => curriculumMap[code]);
+}
+
+/**
+ * Mathematically predicts whether delaying/skipping an available candidate module in activeSem
+ * will force the student into a 6th academic year (Semester 11+ / Year 6)
+ * based on current study path, future prerequisites, seasonal offering, and 30 ECTS cap.
+ */
+function predictIfDelayCausesSixthYear(candidateCode, activeSem) {
+    const simPassed = {};
+    for (let code in simulationState.passedModules) {
+        simPassed[code] = simulationState.passedModules[code];
+    }
+
+    // Pass currently registered active modules in activeSem (excluding candidateCode)
+    if (simulationState.activeRegistered) {
+        simulationState.activeRegistered.forEach(r => {
+            if (r.code !== candidateCode && r.outcome === 'pass') {
+                simPassed[r.code] = activeSem;
+            }
+        });
+    }
+
+    // Simulate upcoming semesters step by step starting from activeSem + 1
+    let futureSem = activeSem + 1;
+    const maxSem = 12; // 6 years = 12 semesters max
+
+    while (futureSem <= maxSem) {
+        const unpassed = curriculumData.filter(c => simPassed[c.code] === undefined || simPassed[c.code] === null);
+        if (unpassed.length === 0) break;
+
+        const isOddSeason = (futureSem % 2 !== 0);
+        let semEcts = 0;
+
+        const eligible = unpassed.filter(c => {
+            const isSameSeason = (c.sem % 2 !== 0) === isOddSeason;
+            if (!isSameSeason) return false;
+            const prereqsMet = c.prereq.every(pCode => {
+                const pSem = simPassed[pCode];
+                return pSem !== undefined && pSem !== null && pSem < futureSem;
+            });
+            return prereqsMet;
+        });
+
+        // Priority sort: courses that are prerequisites for other unpassed courses first
+        eligible.sort((a, b) => {
+            const aPrereq = curriculumData.some(c => (simPassed[c.code] === null || simPassed[c.code] === undefined) && c.prereq.includes(a.code));
+            const bPrereq = curriculumData.some(c => (simPassed[c.code] === null || simPassed[c.code] === undefined) && c.prereq.includes(b.code));
+            if (aPrereq && !bPrereq) return -1;
+            if (!aPrereq && bPrereq) return 1;
+            return a.sem - b.sem;
+        });
+
+        eligible.forEach(c => {
+            if (semEcts + c.ects <= 30) {
+                simPassed[c.code] = futureSem;
+                semEcts += c.ects;
+            }
+        });
+
+        futureSem++;
+    }
+
+    const remainingUnpassed = curriculumData.filter(c => simPassed[c.code] === undefined || simPassed[c.code] === null).length;
+    // Pushes into 6th year if remaining unpassed courses still exist at Sem 10, or total semesters > 10
+    return remainingUnpassed > 0 || (futureSem - 1) > 10;
+}
+
+
+/**
  * Custom In-App Modal Dialog Utilities
  */
 function showAppAlert(message, title = "تنبيه أكاديمي", icon = "⚠️") {
@@ -400,6 +486,20 @@ function renderSimulationUI() {
     const btnAdvanceText = document.getElementById('btnAdvanceText');
     const dismissalBanner = document.getElementById('dismissalBanner');
 
+    let totalCumulativeEcts = 0;
+    for (let code in simulationState.passedModules) {
+        if (simulationState.passedModules[code] !== null) {
+            totalCumulativeEcts += curriculumMap[code].ects;
+        }
+    }
+    if (simulationState.activeRegistered) {
+        simulationState.activeRegistered.forEach(r => {
+            if (r.outcome === 'pass') {
+                totalCumulativeEcts += curriculumMap[r.code].ects;
+            }
+        });
+    }
+
     if (isDismissed) {
         simulationState.isDismissed = true;
         if (dismissalBanner) dismissalBanner.style.display = 'block';
@@ -410,38 +510,29 @@ function renderSimulationUI() {
             btnAdvance.style.cursor = 'not-allowed';
             btnAdvance.style.opacity = '0.85';
         }
+    } else if (totalCumulativeEcts >= 240) {
+        simulationState.isDismissed = false;
+        if (dismissalBanner) dismissalBanner.style.display = 'none';
+        if (btnAdvanceText) btnAdvanceText.textContent = `🎓 إنهاء المسار الدراسي (تخرج - 240 وحدة)`;
+        if (btnAdvance) {
+            btnAdvance.disabled = false;
+            btnAdvance.style.background = 'linear-gradient(135deg, #15803d 0%, #059669 100%)';
+            btnAdvance.style.cursor = 'pointer';
+            btnAdvance.style.opacity = '1';
+        }
     } else {
         simulationState.isDismissed = false;
         if (dismissalBanner) dismissalBanner.style.display = 'none';
 
-        // Check if all remaining unpassed courses are registered and set to pass
-        const unpassedCodes = curriculumData
-            .filter(c => simulationState.passedModules[c.code] === null)
-            .map(c => c.code);
-        const registeredPassCodes = simulationState.activeRegistered
-            .filter(r => r.outcome === 'pass')
-            .map(r => r.code);
-        const willCompleteAll = unpassedCodes.length > 0 &&
-            unpassedCodes.every(code => registeredPassCodes.includes(code));
-
-        if (willCompleteAll) {
-            if (btnAdvanceText) btnAdvanceText.textContent = `🎓 إنهاء المسار الدراسي`;
-            if (btnAdvance) {
-                btnAdvance.disabled = false;
-                btnAdvance.style.background = 'linear-gradient(135deg, #15803d 0%, #059669 100%)';
-                btnAdvance.style.cursor = 'pointer';
-                btnAdvance.style.opacity = '1';
-            }
-        } else {
-            if (btnAdvanceText) btnAdvanceText.textContent = `الإنتقال إلى ${nextSemTitle}`;
-            if (btnAdvance) {
-                btnAdvance.disabled = false;
-                btnAdvance.style.background = 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)';
-                btnAdvance.style.cursor = 'pointer';
-                btnAdvance.style.opacity = '1';
-            }
+        if (btnAdvanceText) btnAdvanceText.textContent = `الإنتقال إلى ${nextSemTitle}`;
+        if (btnAdvance) {
+            btnAdvance.disabled = false;
+            btnAdvance.style.background = 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)';
+            btnAdvance.style.cursor = 'pointer';
+            btnAdvance.style.opacity = '1';
         }
     }
+
 
     const activeEcts = simulationState.activeRegistered.reduce((sum, r) => sum + curriculumMap[r.code].ects, 0);
     const gaugeBadge = document.getElementById('registeredEctsBadge');
@@ -470,10 +561,19 @@ function renderSimulationUI() {
 
 function updateKPIs() {
     let earnedEcts = 0;
+    // Units from completed previous semesters
     for (let code in simulationState.passedModules) {
         if (simulationState.passedModules[code] !== null) {
             earnedEcts += curriculumMap[code].ects;
         }
+    }
+    // Interactive cumulative units from currently active registered modules (passing)
+    if (simulationState.activeRegistered) {
+        simulationState.activeRegistered.forEach(r => {
+            if (r.outcome === 'pass') {
+                earnedEcts += curriculumMap[r.code].ects;
+            }
+        });
     }
 
     document.getElementById('valEarnedEcts').textContent = earnedEcts;
@@ -489,7 +589,6 @@ function updateKPIs() {
     const totalRepeatCount = pastRepeatCount + currentActiveRepeatCount;
 
     let computedExtraYears = 0;
-
     if (simulationState.currentSem > 8) {
         computedExtraYears = Math.ceil((simulationState.currentSem - 8) / 2);
     }
@@ -497,6 +596,7 @@ function updateKPIs() {
     if (totalFailuresCount > 0 && computedExtraYears === 0) {
         computedExtraYears = 1;
     }
+
 
     if (totalRepeatCount > 0) {
         computedExtraYears = Math.max(computedExtraYears, 1 + totalRepeatCount);
@@ -527,6 +627,7 @@ function updateKPIs() {
 }
 
 function renderRegisteredGrid() {
+
     const grid = document.getElementById('registeredModulesGrid');
     grid.innerHTML = '';
 
@@ -535,6 +636,8 @@ function renderRegisteredGrid() {
         return;
     }
 
+    const currentSem = simulationState.currentSem;
+
     simulationState.activeRegistered.forEach(item => {
         const course = curriculumMap[item.code];
         const originText = getFullStageAndCourseName(course.sem);
@@ -542,10 +645,8 @@ function renderRegisteredGrid() {
         const isFail = item.outcome === 'fail';
 
         const isYellowCard = item.isRetake || item.isAdded;
-        // Forced: either a retake prereq or a delayed prereq course
         const isForcedRetake = item.isRetake && item.isForced;
         const isForcedDelayed = !item.isRetake && item.isForced;
-        const isOptionalRetake = item.isRetake && !item.isForced;
         const isAnyForced = isForcedRetake || isForcedDelayed;
 
         const card = document.createElement('div');
@@ -556,10 +657,96 @@ function renderRegisteredGrid() {
             retakeLabelText = '(معادة - إجبارية ⛓️)';
         } else if (isForcedDelayed) {
             retakeLabelText = '(متأخرة - إجبارية ⛓️)';
-        } else if (isOptionalRetake) {
-            retakeLabelText = '(معادة - اختيارية)';
         } else if (item.isAdded) {
             retakeLabelText = '(مضافة)';
+        }
+
+        let failImpactHTML = '';
+        if (isFail) {
+            const deps = getDownstreamDependencies(item.code);
+            const immediateBlocked = deps.filter(dep => dep.sem <= course.sem + 1);
+            const futureDeps = deps.filter(dep => dep.sem > course.sem + 1);
+
+            if (immediateBlocked.length > 0) {
+                const listHTML = immediateBlocked.map(dep => {
+                    const stageName = getStageName(Math.ceil(dep.sem / 2));
+                    return `<li><strong>${dep.nameAr}</strong> - ${stageName}</li>`;
+                }).join('');
+
+                let indirectBtnHTML = '';
+                if (futureDeps.length > 0) {
+                    const indirectListHTML = futureDeps.map(dep => {
+                        const fullSemInfo = getFullStageAndCourseName(dep.sem);
+                        return `<li><strong>${dep.nameAr}</strong> - ${fullSemInfo} <span class="indirect-tag">(حرمان غير مباشر)</span></li>`;
+                    }).join('');
+
+                    indirectBtnHTML = `
+                        <div class="indirect-toggle-wrapper">
+                            <button class="btn-toggle-indirect" type="button">
+                                <span class="info-circle-icon">ⓘ</span>
+                                <span>اطّلع على المواد التي تعتمد على هذه المادة أيضاً</span>
+                            </button>
+                            <div class="indirect-collapsible-box" style="display: none;">
+                                <div class="yellow-box-title">💡 المواد التي تعتمد على هذه المادة أيضاً:</div>
+                                <ul class="yellow-box-list">
+                                    ${indirectListHTML}
+                                </ul>
+                                <div class="yellow-box-footer-note">
+                                    لكن إذا تم إنجاز هذه المادة، يمكن خوض هذه المواد بشكل طبيعي في أعوامها وفصولها المحددة.
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+
+                failImpactHTML = `
+                    <div class="fail-impact-banner">
+                        <div class="fail-impact-title">🚨 سيؤدي الرسوب بمادة (${course.nameAr}) إلى حرمان مباشر من التسجيل على:</div>
+                        <ul class="fail-impact-list">
+                            ${listHTML}
+                        </ul>
+                        ${indirectBtnHTML}
+                    </div>
+                `;
+            } else if (futureDeps.length > 0) {
+                const listHTML = futureDeps.map(dep => {
+                    const fullSemInfo = getFullStageAndCourseName(dep.sem);
+                    return `<li><strong>${dep.nameAr}</strong> - ${fullSemInfo} <span class="indirect-tag">(حرمان غير مباشر)</span></li>`;
+                }).join('');
+
+                failImpactHTML = `
+                    <div class="yellow-pass-box">
+                        <div class="yellow-box-title">⚠️ قد تؤدي عدم إنجاز هذه المادة إلى حرمان غير مباشر من:</div>
+                        <ul class="yellow-box-list">
+                            ${listHTML}
+                        </ul>
+                        <div class="yellow-box-footer-note">
+                            لكن إذا تم إنجاز هذه المادة، يمكن خوض هذه المواد بشكل طبيعي في أعوامها وفصولها المحددة.
+                        </div>
+                    </div>
+                `;
+            } else {
+                failImpactHTML = `
+                    <div class="fail-impact-banner muted">
+                        ℹ️ الرسوب بمادة (${course.nameAr}) لا يسبب حرمان مباشر من تسجيل أي مادة في الكورس القادم، لكن تؤدي الى سنة خامسة بسبب حد عدد الوحدات لكل كورس
+                    </div>
+                `;
+            }
+        }
+
+        const isResearchMethodologyInSem6 = currentSem === 6 && item.code === 'UOB309';
+        let researchMethodologyAdviceHTML = '';
+        if (isResearchMethodologyInSem6) {
+            const availPanels = computeRegistrationPanels(currentSem);
+            const availMods = availPanels.available;
+            if (availMods.length >= 2) {
+                researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (${availMods[0].nameAr}) أو (${availMods[1].nameAr})</div>`;
+            } else if (availMods.length === 1) {
+                researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (${availMods[0].nameAr})</div>`;
+            } else {
+                researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (تطوير تطبيقات النقال) أو (تعلم الألة)</div>`;
+            }
         }
 
         card.innerHTML = `
@@ -573,23 +760,39 @@ function renderRegisteredGrid() {
             <div class="origin-tag-badge">من ${originText}</div>
             ${isForcedRetake ? '<div class="repeat-warning-pill">⚠️ مادة معادة إجبارية: تعتمد عليها مواد لاحقة. الرسوب بها يضيف سنة إضافية ثانية</div>' : ''}
             ${isForcedDelayed ? '<div class="repeat-warning-pill" style="background:rgba(217,119,6,0.1);color:#92400e;border-color:rgba(217,119,6,0.25);">⛓️ مادة متأخرة إجبارية: تعتمد عليها مواد لاحقة ويجب تسجيلها</div>' : ''}
-            ${isOptionalRetake ? '<div class="repeat-warning-pill" style="background:rgba(59,130,246,0.12);color:#2563eb;border-color:rgba(59,130,246,0.25);">ℹ️ مادة معادة اختيارية: لا تعتمد عليها مواد لاحقة، يمكنك إزالتها وتأجيلها</div>' : ''}
             <div class="outcome-selector-group">
                 <button class="single-fail-btn ${isFail ? 'active' : ''}">
                     ${isFail ? '🔴 رسوب تكويني (مُفعل)' : '🔴 رسوب تكويني'}
                 </button>
             </div>
+            ${failImpactHTML}
             ${isAnyForced ? '' : '<button class="btn-remove-module">إزالة 🗑️</button>'}
+            ${researchMethodologyAdviceHTML}
         `;
 
         const btnFail = card.querySelector('.single-fail-btn');
-
         btnFail.addEventListener('click', () => {
             item.outcome = (item.outcome === 'fail') ? 'pass' : 'fail';
             renderSimulationUI();
         });
 
+        const btnToggleIndirect = card.querySelector('.btn-toggle-indirect');
+        if (btnToggleIndirect) {
+            btnToggleIndirect.addEventListener('click', () => {
+                const box = card.querySelector('.indirect-collapsible-box');
+                if (box) {
+                    const isHidden = box.style.display === 'none';
+                    box.style.display = isHidden ? 'block' : 'none';
+                    btnToggleIndirect.querySelector('span:last-child').textContent = isHidden 
+                        ? 'إخفاء المواد التي تعتمد على هذه المادة أيضاً' 
+                        : 'اطّلع على المواد التي تعتمد على هذه المادة أيضاً';
+                }
+            });
+        }
+
         const btnRemove = card.querySelector('.btn-remove-module');
+
+
         if (btnRemove) {
             btnRemove.addEventListener('click', () => {
                 simulationState.activeRegistered = simulationState.activeRegistered.filter(r => r.code !== item.code);
@@ -601,6 +804,7 @@ function renderRegisteredGrid() {
     });
 }
 
+
 function renderRegistrationPanels(panelsData, activeSem) {
     const isOddActiveCourse = activeSem % 2 !== 0;
 
@@ -611,9 +815,43 @@ function renderRegistrationPanels(panelsData, activeSem) {
     if (panelsData.available.length === 0) {
         availList.innerHTML = `<div style="font-size:0.8rem;color:var(--text-muted);padding:0.5rem;">لا توجد مواد متاح إضافتها.</div>`;
     } else {
+        if (panelsData.available.some(m => m.ects === 7)) {
+            const noticeDiv = document.createElement('div');
+            noticeDiv.className = 'available-7ects-notice';
+            noticeDiv.innerHTML = `💡 تتوفر مواد متاح إضافتها بمقدار 7 وحدات (7 ECTS) لجدولك الدراسي.`;
+            availList.appendChild(noticeDiv);
+        }
+
         panelsData.available.forEach(mod => {
             const originText = getFullStageAndCourseName(mod.origSem);
             const unitsFormatted = formatUnits(mod.ects);
+
+            const deps = getDownstreamDependencies(mod.code);
+            let delayWarningHTML = '';
+
+            if (deps.length > 0) {
+                const depItemsHTML = deps.map(dep => {
+                    const isImmediate = dep.sem <= mod.origSem + 1;
+                    const tagText = isImmediate ? 'حرمان مباشر' : 'حرمان غير مباشر';
+                    const tagClass = isImmediate ? 'tag-direct' : 'tag-indirect';
+                    return `<li><strong>${dep.nameAr}</strong> - <span class="${tagClass}">(${tagText})</span></li>`;
+                }).join('');
+
+                const causesSixthYear = predictIfDelayCausesSixthYear(mod.code, activeSem);
+
+                delayWarningHTML = `
+                    <div class="available-delay-warning">
+                        <div class="delay-warning-title">🚨 عدم إضافتك هذه المادة سيؤدي إلى حرمانك من التسجيل على المواد:</div>
+                        <ul class="delay-warning-list">
+                            ${depItemsHTML}
+                        </ul>
+                        ${causesSixthYear ? '<div class="delay-warning-footer">⚠️ تنبيه: تأجيل هذه المادة يؤدي إلى سنة سادسة!</div>' : ''}
+                    </div>
+                `;
+
+
+            }
+
             const div = document.createElement('div');
             div.className = 'panel-item-card';
             div.innerHTML = `
@@ -623,7 +861,9 @@ function renderRegistrationPanels(panelsData, activeSem) {
                     <span class="origin-tag-badge" style="font-size:0.68rem;padding:0.1rem 0.4rem;">من ${originText}</span>
                 </div>
                 <button class="btn-add-module">+ إضافة</button>
+                ${delayWarningHTML}
             `;
+
 
             div.querySelector('.btn-add-module').addEventListener('click', async () => {
                 if (simulationState.isDismissed) {
@@ -758,26 +998,36 @@ async function advanceToNextSemester() {
 
 /**
  * Builds HTML for Stage 2-Column Transcript
+ * @param {number} partFilter - 0 for all stages, 1 for Part 1 (Stages 1-2), 2 for Part 2 (Stages 3-4+)
  */
-function buildStageTranscriptHTML() {
+function buildStageTranscriptHTML(partFilter = 0) {
     const completedSemestersCount = Object.keys(simulationState.history).length;
-    if (completedSemestersCount === 0) {
+    if (completedSemestersCount === 0 && partFilter === 0) {
         return `<div style="text-align:center;padding:1.8rem;color:var(--text-muted);font-size:0.9rem;">لم يتم إنهاء أي كورس بعد. قم بإكمال الكورس الحالي لعرض الملخص الوصفي هنا.</div>`;
     }
 
     let html = `<div class="stage-transcript-container">`;
 
-    const maxSemCompleted = Math.max(...Object.keys(simulationState.history).map(Number));
-    const totalStages = Math.ceil(maxSemCompleted / 2);
+    const maxSemCompleted = Math.max(0, ...Object.keys(simulationState.history).map(Number));
+    const maxStageInHistory = Math.ceil(maxSemCompleted / 2);
 
-    for (let stage = 1; stage <= totalStages; stage++) {
+    let startStage = 1;
+    let endStage = Math.max(4, maxStageInHistory);
+
+    if (partFilter === 1) {
+        startStage = 1;
+        endStage = 2;
+    } else if (partFilter === 2) {
+        startStage = 3;
+        endStage = Math.max(4, maxStageInHistory);
+    }
+
+    for (let stage = startStage; stage <= endStage; stage++) {
         const sem1 = (stage * 2) - 1;
         const sem2 = stage * 2;
 
         const hist1 = simulationState.history[sem1];
         const hist2 = simulationState.history[sem2];
-
-        if (!hist1 && !hist2) continue;
 
         const stageTitleName = getStageName(stage);
 
@@ -802,19 +1052,37 @@ function buildStageTranscriptHTML() {
 function renderTranscriptTable() {
     const wrapper = document.getElementById('transcriptTableWrapper');
     if (wrapper) {
-        wrapper.innerHTML = buildStageTranscriptHTML();
+        wrapper.innerHTML = buildStageTranscriptHTML(0);
     }
 }
 
 /**
  * Opens Full-Page Graduation Academic Transcript Modal
+ * Dynamically builds A4 Page Sheets (2 Stages per Page Sheet)
+ * Supports 2, 3, 4 or more A4 images automatically based on total stages.
  */
 function openFullGraduationTranscriptModal() {
     const modal = document.getElementById('graduationTranscriptModal');
-    const docBody = document.getElementById('gradDocBody');
-    const txtEarned = document.getElementById('gradDocEarnedEcts');
-    const txtExtra = document.getElementById('gradDocExtraYears');
-    const txtStatus = document.getElementById('gradDocStatusTag');
+    const container = document.getElementById('gradModalTranscriptContent');
+    if (!modal || !container) return;
+
+    // Find highest semester that actually contains modules
+    let highestSemWithModules = 0;
+    for (let semKey in simulationState.history) {
+        const hist = simulationState.history[semKey];
+        if (Array.isArray(hist) && hist.length > 0) {
+            highestSemWithModules = Math.max(highestSemWithModules, Number(semKey));
+        }
+    }
+
+    // Standard curriculum is 4 stages (8 semesters). Only expand if higher semesters have modules.
+    let totalStages = 4;
+    if (highestSemWithModules > 8) {
+        totalStages = Math.ceil(highestSemWithModules / 2);
+    }
+
+    const extraYears = simulationState.maxExtraYearsIncurred || 0;
+    const totalStudyYears = 4 + extraYears;
 
     let earnedEcts = 0;
     for (let code in simulationState.passedModules) {
@@ -823,26 +1091,82 @@ function openFullGraduationTranscriptModal() {
         }
     }
 
-    txtEarned.textContent = `${earnedEcts} / 240 ECTS`;
-    const extraYears = simulationState.maxExtraYearsIncurred || 0;
+    const isGraduated = earnedEcts >= 240;
+    const statusText = isGraduated ? "🎓 خريج (مستوفٍ لكافة المتطلبات)" : "⏳ قيد الدراسة";
+    const statusClass = isGraduated ? "status-pass-tag" : "status-pending-tag";
 
-    if (extraYears === 0) {
-        txtExtra.textContent = "0 سنة (مسار منتظم)";
-    } else {
-        txtExtra.textContent = `+${extraYears} سنة إضافية`;
+    let fullPagesHTML = '';
+
+    for (let stageNum = 1; stageNum <= totalStages; stageNum++) {
+        const stageName = getStageName(stageNum);
+        const sem1 = (stageNum * 2) - 1;
+        const sem2 = stageNum * 2;
+
+        const hist1 = simulationState.history[sem1];
+        const hist2 = simulationState.history[sem2];
+
+        // Skip stages above 4 if they have no modules
+        const hasModulesInStage = stageNum <= 4 || (hist1 && hist1.length > 0) || (hist2 && hist2.length > 0);
+        if (!hasModulesInStage) continue;
+
+        const cleanStageName = stageName.replace(/[⚠️🎓]/g, '').trim();
+        const imageTitleName = `السجل الأكاديمي - ${cleanStageName}`;
+
+        fullPagesHTML += `
+            <div id="gradModalTranscriptPage${stageNum}" class="exportable-transcript-page" data-stage-name="${imageTitleName}" data-page-index="${stageNum}">
+                <div class="official-doc-header">
+                    <div class="doc-header-top">
+                        <div class="doc-title-block">
+                            <h2>السجل الأكاديمي</h2>
+                            <h3>علوم الحاسوب • نظام بولونيا الأكاديمي</h3>
+                        </div>
+                        <span class="page-badge-pill">المرحلة ${stageNum} من ${totalStages}</span>
+                    </div>
+
+                    <div class="doc-stats-summary-bar">
+                        <div class="doc-stat-item">
+                            <span class="stat-lbl">مجموع الوحدات المستوفاة</span>
+                            <span class="stat-val doc-earned-ects">${earnedEcts} / 240 وحدة</span>
+                        </div>
+                        <div class="doc-stat-item">
+                            <span class="stat-lbl">سنوات الدراسة الكلية</span>
+                            <span class="stat-val doc-total-years">${totalStudyYears} سنوات</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="doc-transcript-body">
+                    <div class="stage-transcript-container">
+                        <div class="stage-transcript-block">
+                            <div class="stage-block-header">
+                                <h3 class="stage-block-title">🎓 ${stageName}</h3>
+                            </div>
+                            <div class="stage-courses-columns">
+                                ${renderCourseColumnHTML(sem1, hist1, "📘 الكورس الأول")}
+                                ${renderCourseColumnHTML(sem2, hist2, "📗 الكورس الثاني")}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+
+        if (stageNum < totalStages) {
+            fullPagesHTML += `
+                <div class="page-break-divider">
+                    <span>✂️ فاصل بين الصور (المرحلة ${stageNum} / المرحلة ${stageNum + 1})</span>
+                </div>
+            `;
+        }
     }
 
-    if (earnedEcts >= 240) {
-        txtStatus.textContent = "🎓 خريج (مستوفٍ لكافة المتطلبات)";
-        txtStatus.className = "stat-val status-pass-tag";
-    } else {
-        txtStatus.textContent = "⏳ قيد الدراسة";
-        txtStatus.className = "stat-val status-pending-tag";
-    }
-
-    docBody.innerHTML = buildStageTranscriptHTML();
+    container.innerHTML = fullPagesHTML;
     modal.style.display = 'flex';
 }
+
+
+
 
 function closeFullGraduationTranscriptModal() {
     const modal = document.getElementById('graduationTranscriptModal');
@@ -850,91 +1174,92 @@ function closeFullGraduationTranscriptModal() {
 }
 
 function renderCourseColumnHTML(semNum, semHistory, colTitle) {
-    if (!semHistory) {
-        return `
-            <div class="course-column-card is-empty">
-                <div class="course-col-header">
-                    <span class="course-col-title">${colTitle}</span>
-                </div>
-                <div class="empty-sem-msg">لم يتم التوصل أو إنهاء هذا الكورس بعد.</div>
-            </div>
-        `;
-    }
+    const isPlannedSem = !semHistory;
+    const modulesToRender = semHistory || curriculumData.filter(c => c.sem === semNum).map(c => ({
+        code: c.code,
+        outcome: 'planned',
+        isRetake: false,
+        isAdded: false
+    }));
 
-    const totalRegisteredCount = semHistory.length;
+    const totalRegisteredCount = modulesToRender.length;
     let earnedEctsInSem = 0;
     let passedCount = 0;
     let failedCount = 0;
 
-    const failedModuleNames = [];
-    const repeatFailedModuleNames = [];
-
-    semHistory.forEach(item => {
+    modulesToRender.forEach(item => {
         const course = curriculumMap[item.code];
         if (item.outcome === 'pass') {
             earnedEctsInSem += course.ects;
             passedCount++;
-        } else {
+        } else if (item.outcome === 'fail') {
             failedCount++;
-            failedModuleNames.push(course.nameAr);
-            if (item.isRepeat) {
-                repeatFailedModuleNames.push(course.nameAr);
-            }
+        } else {
+            earnedEctsInSem += course.ects;
         }
     });
 
     const hasFailures = failedCount > 0;
-    const hasRepeatFailures = repeatFailedModuleNames.length > 0;
 
     let statusBadgeHTML = '';
-    let descriptionText = '';
-
-    if (!hasFailures) {
-        statusBadgeHTML = `<span class="sem-card-badge-status status-clean">🟢 مستوفٍ بنجاح</span>`;
-        descriptionText = `اجتاز جميع مواد الكورس بنجاح تام، واستوفى (${formatUnits(earnedEctsInSem)}) بدون أي تأخير.`;
-    } else if (hasRepeatFailures) {
-        statusBadgeHTML = `<span class="sem-card-badge-status status-repeat-fail">🚨 تكرار رسوب (+1 سنة أخرى)</span>`;
-        descriptionText = `تكرر الرسوب في مادة معادة: (${repeatFailedModuleNames.join('، ')}). استوفى ${formatUnits(earnedEctsInSem)}، ورُتبت سنة إضافية ثانية.`;
+    if (isPlannedSem) {
+        statusBadgeHTML = `<span class="sem-card-badge-status status-clean" style="background:#f1f5f9;color:#64748b;border-color:#cbd5e1;">📅 كورس مخطط</span>`;
+    } else if (!hasFailures) {
+        statusBadgeHTML = `<span class="sem-card-badge-status status-clean">🟢 مستوفٍ</span>`;
     } else {
-        statusBadgeHTML = `<span class="sem-card-badge-status status-single-fail">⚠️ رسوب تكويني (+1 سنة)</span>`;
-        descriptionText = `أكمل الكورس واستوفى ${formatUnits(earnedEctsInSem)}، وحصل رسوب في: (${failedModuleNames.join('، ')}). ورُتبت سنة إضافية.`;
+        statusBadgeHTML = `<span class="sem-card-badge-status status-single-fail">⚠️ رسوب تكويني</span>`;
     }
 
-    const currentStage = Math.ceil(semNum / 2);
-    const stageLabels = { 1: 'م1', 2: 'م2', 3: 'م3', 4: 'م4' };
-
-    let chipsHTML = '';
-    semHistory.forEach(item => {
+    let rowsHTML = '';
+    modulesToRender.forEach(item => {
         const course = curriculumMap[item.code];
         const isPass = item.outcome === 'pass';
+        const isFail = item.outcome === 'fail';
+        const isPlanned = item.outcome === 'planned';
         const courseOrigStage = Math.ceil(course.sem / 2);
-        const isForeign = courseOrigStage !== currentStage;
+        const isForeign = course.sem !== semNum;
 
-        let chipClass, statusIcon, originTag;
+        let chipClass, statusIcon, originLabel = '';
 
-        if (!isPass) {
-            chipClass = 'chip-fail';
-            statusIcon = '🔴 رسوب';
-            originTag = isForeign ? `<span class="chip-origin-tag">${stageLabels[courseOrigStage] || 'م' + courseOrigStage}</span>` : '';
-        } else if (isForeign) {
-            chipClass = 'chip-pass-foreign';
-            statusIcon = '✓';
-            originTag = `<span class="chip-origin-tag">${stageLabels[courseOrigStage] || 'م' + courseOrigStage}</span>`;
-        } else {
-            chipClass = 'chip-pass';
-            statusIcon = '✓';
-            originTag = '';
+        if (isForeign) {
+            const origStageName = getStageName(courseOrigStage);
+            const origCourseName = getCourseName(course.sem);
+            originLabel = `(من ${origStageName} - ${origCourseName})`;
         }
 
-        chipsHTML += `
-            <span class="module-chip ${chipClass}">
-                ${statusIcon} ${course.nameAr} (${course.ects}) ${item.isRetake ? '[معادة]' : ''} ${originTag}
-            </span>
+        if (isFail) {
+            chipClass = 'chip-fail';
+            statusIcon = '🔴 رسوب تكويني';
+        } else if (isPlanned) {
+            chipClass = 'chip-planned';
+            statusIcon = '📅 مخطط';
+        } else if (isForeign) {
+            chipClass = 'chip-pass-foreign';
+            statusIcon = '✓ مستوفاة';
+        } else {
+            chipClass = 'chip-pass';
+            statusIcon = '✓ مستوفاة';
+        }
+
+        rowsHTML += `
+            <div class="transcript-module-row ${chipClass}">
+                <div class="mod-row-top">
+                    <span class="mod-row-title"><strong>${course.nameAr}</strong></span>
+                    <span class="mod-row-ects">${course.ects} وحدة</span>
+                </div>
+                <div class="mod-row-details">
+                    <span class="mod-row-status">${statusIcon}</span>
+                    ${originLabel ? `<span class="mod-row-origin">${originLabel}</span>` : ''}
+                </div>
+            </div>
         `;
+
+
+
     });
 
     return `
-        <div class="course-column-card">
+        <div class="course-column-card ${isPlannedSem ? 'is-planned-card' : ''}">
             <div class="course-col-header">
                 <span class="course-col-title">${colTitle}</span>
                 ${statusBadgeHTML}
@@ -946,26 +1271,21 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
                     <span class="sem-metric-value">${formatUnits(earnedEctsInSem)}</span>
                 </div>
                 <div class="sem-metric-item">
-                    <span class="sem-metric-label">الحالة</span>
-                    <span class="sem-metric-value" style="color: ${hasFailures ? '#be123c' : '#15803d'};">
-                        ${passedCount} نجاح ${hasFailures ? `• ${failedCount} رسوب` : ''}
-                    </span>
+                    <span class="sem-metric-label">عدد المواد المسجلة</span>
+                    <span class="sem-metric-value">${totalRegisteredCount} مواد</span>
                 </div>
             </div>
 
-            <div class="sem-descriptive-text ${hasFailures ? 'has-failure' : ''}">
-                ${descriptionText}
-            </div>
-
             <div class="sem-modules-chips-wrapper">
-                <span class="chips-label">المواد:</span>
-                <div class="sem-modules-chips">
-                    ${chipsHTML}
+                <div class="sem-modules-list-container">
+                    ${rowsHTML}
                 </div>
             </div>
         </div>
     `;
 }
+
+
 
 // --------------------------------------------------------------------------
 // 4. Welcome Screen & Main Workspace Controls

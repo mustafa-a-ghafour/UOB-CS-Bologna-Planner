@@ -4,21 +4,21 @@
  */
 
 /**
- * Captures an HTML element and downloads it as a high-resolution PNG image
- * @param {string} elementId - ID of the container to capture
- * @param {string} filename - Output file name
+ * Captures transcript pages (1 Stage per Page Sheet) and downloads them as high-resolution PNG images.
+ * Image filenames format: "السجل الأكاديمي - [اسم المرحلة].png"
+ * Mobile Portrait format (480px) on 100% Solid White Background.
  */
-async function exportTranscriptAsImage(elementId = "gradModalTranscriptContent", filename = "السجل_الأكاديمي.png") {
-    const container = document.getElementById(elementId);
-    if (!container) {
-        console.error("Target container not found:", elementId);
+async function exportTranscriptAsImage() {
+    const pages = Array.from(document.querySelectorAll('.exportable-transcript-page'));
+    const exportBtn = document.getElementById('btnExportImage');
+
+    if (pages.length === 0) {
+        console.error("No transcript pages found to export.");
         return;
     }
 
-    const exportBtn = document.getElementById('btnExportImage');
     if (exportBtn) {
         exportBtn.disabled = true;
-        exportBtn.innerHTML = `⏳ جاري توليد الصورة...`;
     }
 
     try {
@@ -32,46 +32,23 @@ async function exportTranscriptAsImage(elementId = "gradModalTranscriptContent",
             });
         }
 
-        // Force a consistent desktop-width render for the exported image
-        const EXPORT_WIDTH = 1100;
-        const origStyles = {
-            width: container.style.width,
-            maxWidth: container.style.maxWidth,
-            minWidth: container.style.minWidth,
-            position: container.style.position
-        };
-        container.style.width = `${EXPORT_WIDTH}px`;
-        container.style.maxWidth = `${EXPORT_WIDTH}px`;
-        container.style.minWidth = `${EXPORT_WIDTH}px`;
+        const totalPages = pages.length;
 
-        // Allow layout to recalculate
-        await new Promise(r => setTimeout(r, 100));
+        for (let i = 0; i < totalPages; i++) {
+            const pageElem = pages[i];
+            const stageTitleAttr = pageElem.getAttribute('data-stage-name');
+            const filename = stageTitleAttr ? `${stageTitleAttr}.png` : `السجل_الأكاديمي_المرحلة_${i + 1}.png`;
 
-        const canvas = await html2canvas(container, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            logging: false,
-            windowWidth: EXPORT_WIDTH,
-            windowHeight: container.scrollHeight
-        });
+            if (exportBtn) {
+                exportBtn.innerHTML = `⏳ جاري استخراج (${i + 1} من ${totalPages})...`;
+            }
 
-        // Restore original styles
-        container.style.width = origStyles.width;
-        container.style.maxWidth = origStyles.maxWidth;
-        container.style.minWidth = origStyles.minWidth;
-        container.style.position = origStyles.position;
-
-        const imageURI = canvas.toDataURL("image/png");
-        const downloadLink = document.createElement('a');
-        downloadLink.href = imageURI;
-        downloadLink.download = filename;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+            await renderAndDownloadMobilePortraitPage(pageElem, filename);
+            await new Promise(r => setTimeout(r, 400));
+        }
 
         if (typeof showAppAlert === 'function') {
-            await showAppAlert("تم استخراج وتحميل السجل الأكاديمي كصورة عالية الدقة بنجاح! 📸", "نجاح الاستخراج", "✅");
+            await showAppAlert(`تم استخراج وتحميل السجل الأكاديمي كـ (${totalPages}) صور لمراحل الدراسة بنجاح! 📸📄`, "نجاح الاستخراج", "✅");
         }
     } catch (error) {
         console.error("Failed to export transcript image:", error);
@@ -84,4 +61,61 @@ async function exportTranscriptAsImage(elementId = "gradModalTranscriptContent",
             exportBtn.innerHTML = `📸 تحميل السجل كصورة (PNG)`;
         }
     }
+}
+
+async function renderAndDownloadMobilePortraitPage(sourceElement, filename) {
+    // Mobile Screen Portrait width: 480px
+    const EXPORT_WIDTH = 480;
+
+    // Dedicated off-screen container with 100% solid white background
+    const renderContainer = document.createElement('div');
+    renderContainer.style.position = 'absolute';
+    renderContainer.style.left = '-9999px';
+    renderContainer.style.top = '0';
+    renderContainer.style.width = `${EXPORT_WIDTH}px`;
+    renderContainer.style.background = '#ffffff';
+    renderContainer.style.boxSizing = 'border-box';
+    renderContainer.style.zIndex = '-9999';
+    renderContainer.style.overflow = 'visible';
+
+    const clone = sourceElement.cloneNode(true);
+    clone.style.width = `${EXPORT_WIDTH}px`;
+    clone.style.height = 'auto';
+    clone.style.margin = '0';
+    clone.style.padding = '24px 20px';
+    clone.style.boxShadow = 'none';
+    clone.style.borderRadius = '0';
+    clone.style.background = '#ffffff';
+    clone.style.transform = 'none';
+    clone.style.boxSizing = 'border-box';
+    clone.style.overflow = 'visible';
+
+    renderContainer.appendChild(clone);
+    document.body.appendChild(renderContainer);
+
+    // Wait for layout computation and font rendering
+    await new Promise(r => setTimeout(r, 250));
+
+    const fullHeight = renderContainer.offsetHeight;
+
+    const canvas = await html2canvas(renderContainer, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: EXPORT_WIDTH,
+        height: fullHeight,
+        windowWidth: EXPORT_WIDTH,
+        windowHeight: fullHeight
+    });
+
+    document.body.removeChild(renderContainer);
+
+    const imageURI = canvas.toDataURL("image/png");
+    const downloadLink = document.createElement('a');
+    downloadLink.href = imageURI;
+    downloadLink.download = filename;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
 }

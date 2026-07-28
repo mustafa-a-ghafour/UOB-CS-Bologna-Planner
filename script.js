@@ -741,19 +741,18 @@ function renderRegisteredGrid() {
         if (isResearchMethodologyInSem6) {
             const availPanels = computeRegistrationPanels(currentSem);
             const availMods = availPanels.available;
-            const availMods7Plus = availMods.filter(m => m.ects >= 7);
 
             const activeEcts = simulationState.activeRegistered.reduce((sum, r) => sum + curriculumMap[r.code].ects, 0);
             const remainingEcts = 30 - activeEcts;
 
-            if (availMods7Plus.length > 0 && remainingEcts < 7) {
-                const targetMod = availMods7Plus[0];
-                const modName = targetMod ? targetMod.nameAr : "تصميم و برمجة الويب";
-                researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (${modName})</div>`;
-            } else if (availMods.length >= 2) {
-                researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (${availMods[0].nameAr}) أو (${availMods[1].nameAr})</div>`;
-            } else if (availMods.length === 1) {
-                researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (${availMods[0].nameAr})</div>`;
+            // Only recommend removing Research Methodology if there are available modules
+            // that CANNOT fit into the current remaining ECTS capacity
+            const needyMods = availMods.filter(m => m.ects > remainingEcts);
+
+            if (needyMods.length >= 2) {
+                researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (${needyMods[0].nameAr}) أو (${needyMods[1].nameAr})</div>`;
+            } else if (needyMods.length === 1) {
+                researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (${needyMods[0].nameAr})</div>`;
             }
         }
 

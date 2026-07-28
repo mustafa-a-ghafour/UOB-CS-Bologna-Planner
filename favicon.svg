@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Cap Main Gradient -->
+    <linearGradient id="capGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    
+    <!-- Cap Under-Shadow Gradient -->
+    <linearGradient id="capShadow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0369a1" />
+      <stop offset="100%" stop-color="#3730a3" />
+    </linearGradient>
+
+    <!-- Golden Tassel Gradient -->
+    <linearGradient id="tasselGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+  </defs>
+
+  <!-- Pure Graduation Cap (No Background) -->
+  <g transform="translate(0, 20)">
+    <!-- Skull Cap Base (Headband) -->
+    <path d="M136 240 V330 C136 390 376 390 376 330 V240 C376 240 256 280 136 240 Z" fill="url(#capShadow)"/>
+    
+    <!-- Skull Cap Outer Rim Curve -->
+    <path d="M136 330 C136 395 376 395 376 330" fill="none" stroke="url(#capGrad)" stroke-width="12" stroke-linecap="round"/>
+
+    <!-- Mortarboard Top Diamond -->
+    <path d="M256 60 L496 170 L256 280 L16 170 Z" fill="url(#capGrad)"/>
+    
+    <!-- Mortarboard 3D Bottom Edge Shadow -->
+    <path d="M256 280 L496 170 L460 186 L256 296 L52 186 L16 170 Z" fill="url(#capShadow)"/>
+
+    <!-- Center Top Button -->
+    <ellipse cx="256" cy="170" rx="18" ry="12" fill="url(#tasselGrad)"/>
+
+    <!-- Tassel String -->
+    <path d="M256 170 Q 425 185 435 300" fill="none" stroke="url(#tasselGrad)" stroke-width="14" stroke-linecap="round"/>
+    
+    <!-- Tassel Ring & Fringe -->
+    <circle cx="435" cy="305" r="12" fill="url(#tasselGrad)"/>
+    <path d="M422 305 L448 305 L452 400 C452 408 418 408 418 400 Z" fill="url(#tasselGrad)"/>
+  </g>
+</svg>

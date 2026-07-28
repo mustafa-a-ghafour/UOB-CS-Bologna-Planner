@@ -113,11 +113,12 @@ function getDownstreamDependencies(courseCode) {
 }
 
 /**
- * Mathematically predicts whether delaying/skipping an available candidate module in activeSem
+ * Mathematically analyzes whether delaying/skipping an available candidate module in activeSem
  * will force the student into a 6th academic year (Semester 11+ / Year 6)
- * based on current study path, future prerequisites, seasonal offering, and 30 ECTS cap.
+ * or exceed the maximum 6 years limit (Semester 12+) leading to dismissal (ترقين قيد).
+ * Returns: 'none' | 'causes_sixth_year' | 'exceeds_max_years'
  */
-function predictIfDelayCausesSixthYear(candidateCode, activeSem) {
+function analyzeDelayImpact(candidateCode, activeSem) {
     const simPassed = {};
     for (let code in simulationState.passedModules) {
         simPassed[code] = simulationState.passedModules[code];
@@ -173,8 +174,15 @@ function predictIfDelayCausesSixthYear(candidateCode, activeSem) {
     }
 
     const remainingUnpassed = curriculumData.filter(c => simPassed[c.code] === undefined || simPassed[c.code] === null).length;
-    // Pushes into 6th year if remaining unpassed courses still exist at Sem 10, or total semesters > 10
-    return remainingUnpassed > 0 || (futureSem - 1) > 10;
+    const endSem = futureSem - 1;
+
+    if (remainingUnpassed > 0 || endSem > 12) {
+        return 'exceeds_max_years';
+    }
+    if (endSem > 10) {
+        return 'causes_sixth_year';
+    }
+    return 'none';
 }
 
 
@@ -486,19 +494,7 @@ function renderSimulationUI() {
     const btnAdvanceText = document.getElementById('btnAdvanceText');
     const dismissalBanner = document.getElementById('dismissalBanner');
 
-    let totalCumulativeEcts = 0;
-    for (let code in simulationState.passedModules) {
-        if (simulationState.passedModules[code] !== null) {
-            totalCumulativeEcts += curriculumMap[code].ects;
-        }
-    }
-    if (simulationState.activeRegistered) {
-        simulationState.activeRegistered.forEach(r => {
-            if (r.outcome === 'pass') {
-                totalCumulativeEcts += curriculumMap[r.code].ects;
-            }
-        });
-    }
+    const totalCumulativeEcts = getEarnedEcts();
 
     if (isDismissed) {
         simulationState.isDismissed = true;
@@ -533,7 +529,6 @@ function renderSimulationUI() {
         }
     }
 
-
     const activeEcts = simulationState.activeRegistered.reduce((sum, r) => sum + curriculumMap[r.code].ects, 0);
     const gaugeBadge = document.getElementById('registeredEctsBadge');
     if (gaugeBadge) gaugeBadge.textContent = `${activeEcts} / 30 وحدة`;
@@ -559,7 +554,7 @@ function renderSimulationUI() {
     renderTranscriptTable();
 }
 
-function updateKPIs() {
+function getEarnedEcts() {
     let earnedEcts = 0;
     // Units from completed previous semesters
     for (let code in simulationState.passedModules) {
@@ -571,10 +566,17 @@ function updateKPIs() {
     if (simulationState.activeRegistered) {
         simulationState.activeRegistered.forEach(r => {
             if (r.outcome === 'pass') {
-                earnedEcts += curriculumMap[r.code].ects;
+                if (simulationState.passedModules[r.code] === null) {
+                    earnedEcts += curriculumMap[r.code].ects;
+                }
             }
         });
     }
+    return Math.min(240, earnedEcts);
+}
+
+function updateKPIs() {
+    const earnedEcts = getEarnedEcts();
 
     document.getElementById('valEarnedEcts').textContent = earnedEcts;
     document.getElementById('barEarnedEcts').style.width = `${Math.min(100, (earnedEcts / 240) * 100)}%`;
@@ -597,12 +599,11 @@ function updateKPIs() {
         computedExtraYears = 1;
     }
 
-
     if (totalRepeatCount > 0) {
         computedExtraYears = Math.max(computedExtraYears, 1 + totalRepeatCount);
     }
 
-    simulationState.maxExtraYearsIncurred = Math.max(simulationState.maxExtraYearsIncurred || 0, computedExtraYears);
+    simulationState.maxExtraYearsIncurred = computedExtraYears;
     const extraYears = simulationState.maxExtraYearsIncurred;
 
     const valExtraYears = document.getElementById('valExtraYears');
@@ -740,12 +741,19 @@ function renderRegisteredGrid() {
         if (isResearchMethodologyInSem6) {
             const availPanels = computeRegistrationPanels(currentSem);
             const availMods = availPanels.available;
-            if (availMods.length >= 2) {
+            const availMods7Plus = availMods.filter(m => m.ects >= 7);
+
+            const activeEcts = simulationState.activeRegistered.reduce((sum, r) => sum + curriculumMap[r.code].ects, 0);
+            const remainingEcts = 30 - activeEcts;
+
+            if (availMods7Plus.length > 0 && remainingEcts < 7) {
+                const targetMod = availMods7Plus[0];
+                const modName = targetMod ? targetMod.nameAr : "تصميم و برمجة الويب";
+                researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (${modName})</div>`;
+            } else if (availMods.length >= 2) {
                 researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (${availMods[0].nameAr}) أو (${availMods[1].nameAr})</div>`;
             } else if (availMods.length === 1) {
                 researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (${availMods[0].nameAr})</div>`;
-            } else {
-                researchMethodologyAdviceHTML = `<div class="research-methodology-advice">💡 يُنصح بإزالة هذه المادة، وتسجيل (تطوير تطبيقات النقال) أو (تعلم الألة)</div>`;
             }
         }
 
@@ -805,8 +813,35 @@ function renderRegisteredGrid() {
 }
 
 
+function getModuleWarningWeight(mod, activeSem) {
+    const deps = getDownstreamDependencies(mod.code);
+    if (deps.length === 0) {
+        return 0; // No warning box at all
+    }
+
+    const impact = analyzeDelayImpact(mod.code, activeSem);
+    if (impact === 'exceeds_max_years') {
+        return 3; // Dismissal warning (ترقين قيد) - highest priority
+    }
+    if (impact === 'causes_sixth_year') {
+        return 2; // 6th year warning (سنة سادسة)
+    }
+    return 1; // General downstream dependency warning
+}
+
 function renderRegistrationPanels(panelsData, activeSem) {
     const isOddActiveCourse = activeSem % 2 !== 0;
+
+    // Priority sort available modules: modules with warnings come first
+    panelsData.available.sort((a, b) => {
+        const weightA = getModuleWarningWeight(a, activeSem);
+        const weightB = getModuleWarningWeight(b, activeSem);
+
+        if (weightB !== weightA) {
+            return weightB - weightA; // Higher warning priority first
+        }
+        return a.origSem - b.origSem; // Earlier original semester first
+    });
 
     const availList = document.getElementById('availableModulesList');
     document.getElementById('availableCountTag').textContent = `${panelsData.available.length} مواد`;
@@ -837,7 +872,15 @@ function renderRegistrationPanels(panelsData, activeSem) {
                     return `<li><strong>${dep.nameAr}</strong> - <span class="${tagClass}">(${tagText})</span></li>`;
                 }).join('');
 
-                const causesSixthYear = predictIfDelayCausesSixthYear(mod.code, activeSem);
+                const currentExtraYears = simulationState.maxExtraYearsIncurred || 0;
+                const impact = analyzeDelayImpact(mod.code, activeSem);
+
+                let footerWarningHTML = '';
+                if (impact === 'exceeds_max_years') {
+                    footerWarningHTML = '<div class="delay-warning-footer" style="background:rgba(220,38,38,0.15);color:#dc2626;border-color:rgba(220,38,38,0.3);">⚠️ عدم اضافة هذه المادة قد يؤدي الى تجاوز حد السنين وترقين القيد</div>';
+                } else if (impact === 'causes_sixth_year' && currentExtraYears < 2) {
+                    footerWarningHTML = '<div class="delay-warning-footer">⚠️ تنبيه: تأجيل هذه المادة يؤدي إلى سنة سادسة!</div>';
+                }
 
                 delayWarningHTML = `
                     <div class="available-delay-warning">
@@ -845,7 +888,7 @@ function renderRegistrationPanels(panelsData, activeSem) {
                         <ul class="delay-warning-list">
                             ${depItemsHTML}
                         </ul>
-                        ${causesSixthYear ? '<div class="delay-warning-footer">⚠️ تنبيه: تأجيل هذه المادة يؤدي إلى سنة سادسة!</div>' : ''}
+                        ${footerWarningHTML}
                     </div>
                 `;
 
@@ -856,7 +899,7 @@ function renderRegistrationPanels(panelsData, activeSem) {
             div.className = 'panel-item-card';
             div.innerHTML = `
                 <div class="item-info-box">
-                    <span class="item-title">${mod.nameAr} ${mod.isRetake ? '(معادة)' : ''}</span>
+                    <span class="item-title">${mod.nameAr}</span>
                     <span class="item-sub-code">${unitsFormatted}</span>
                     <span class="origin-tag-badge" style="font-size:0.68rem;padding:0.1rem 0.4rem;">من ${originText}</span>
                 </div>
@@ -1084,12 +1127,7 @@ function openFullGraduationTranscriptModal() {
     const extraYears = simulationState.maxExtraYearsIncurred || 0;
     const totalStudyYears = 4 + extraYears;
 
-    let earnedEcts = 0;
-    for (let code in simulationState.passedModules) {
-        if (simulationState.passedModules[code] !== null) {
-            earnedEcts += curriculumMap[code].ects;
-        }
-    }
+    const earnedEcts = getEarnedEcts();
 
     const isGraduated = earnedEcts >= 240;
     const statusText = isGraduated ? "🎓 خريج (مستوفٍ لكافة المتطلبات)" : "⏳ قيد الدراسة";
@@ -1195,7 +1233,7 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
         } else if (item.outcome === 'fail') {
             failedCount++;
         } else {
-            earnedEctsInSem += course.ects;
+            // Planned semester outcome - do not add to earned ECTS
         }
     });
 

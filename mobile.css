@@ -10,6 +10,10 @@
 }
 
 @media (max-width: 868px) {
+    .app-wrapper {
+        padding: 0.75rem 0.55rem;
+    }
+
     .header-container {
         flex-direction: column;
         align-items: flex-start;
@@ -42,11 +46,6 @@
         gap: 0.65rem;
     }
 
-    .btn-help-nav {
-        font-size: 0.72rem;
-        padding: 0.2rem 0.5rem;
-    }
-
     .navbar-compact-metric {
         justify-content: space-between;
         width: 100%;
@@ -70,11 +69,195 @@
         gap: 1.35rem;
     }
 
-    .btn-start-hero {
+    .welcome-action-bar {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.75rem;
+    }
+
+    .btn-start-hero,
+    .btn-quick-look-hero {
         width: 100%;
         justify-content: center;
-        padding: 0.9rem 1.25rem;
+        padding: 0.85rem 1.2rem;
+        font-size: 0.96rem;
+    }
+
+    /* Quick Look Mobile */
+    .quick-look-screen-card {
+        padding: 1rem 0.75rem;
+        gap: 1rem;
+    }
+
+    .quick-look-header-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+        padding-bottom: 0.85rem;
+    }
+
+    .btn-back-home {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .quick-look-title {
+        font-size: 1.25rem;
+    }
+
+    .quick-look-subtitle {
+        font-size: 0.84rem;
+        line-height: 1.5;
+    }
+
+    .quick-look-selectors-box {
+        gap: 0.75rem;
+        padding: 0.85rem 0.75rem;
+    }
+
+    .ql-selectors-top-row {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .ql-impact-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        width: 100%;
+    }
+
+    .ql-impact-card {
+        padding: 0.95rem 0.85rem;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .ql-impact-title {
         font-size: 1rem;
+    }
+
+    .ql-impact-desc {
+        font-size: 0.82rem;
+        line-height: 1.5;
+    }
+
+    .ql-direct-subgroups-wrapper {
+        gap: 0.65rem;
+    }
+
+    .ql-direct-subgroup {
+        padding: 0.65rem 0.65rem;
+        gap: 0.45rem;
+    }
+
+    .ql-subgroup-title {
+        font-size: 0.82rem;
+    }
+
+    .ql-subgroup-note-yellow {
+        padding: 0.5rem 0.65rem;
+        font-size: 0.76rem;
+        line-height: 1.45;
+        gap: 0.35rem;
+    }
+
+    .ql-deps-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .ql-target-card {
+        padding: 1rem 0.85rem;
+        gap: 0.75rem;
+    }
+
+    .ql-target-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+    }
+
+    .ql-target-meta-badges {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    .ql-target-name-ar {
+        font-size: 1.25rem;
+    }
+
+    .ql-target-name-en {
+        font-size: 0.82rem;
+    }
+
+    .ql-target-prereqs-box {
+        padding: 0.65rem 0.75rem;
+        gap: 0.35rem;
+    }
+
+    .ql-prereqs-tags-list {
+        gap: 0.35rem;
+    }
+
+    .ql-prereq-tag {
+        font-size: 0.76rem;
+        padding: 0.22rem 0.55rem;
+        gap: 0.3rem;
+        white-space: normal;
+        word-break: break-word;
+        text-align: center;
+    }
+
+    .ql-prereq-meta {
+        font-size: 0.68rem;
+    }
+
+    .ql-dep-item-card {
+        padding: 0.65rem 0.75rem;
+        gap: 0.35rem;
+        width: 100%;
+    }
+
+    .ql-dep-item-title {
+        font-size: 0.88rem;
+    }
+
+    .ql-dep-ects-badge {
+        font-size: 0.72rem;
+        padding: 0.1rem 0.45rem;
+    }
+
+    .ql-dep-item-stage {
+        font-size: 0.72rem;
+    }
+
+    .ql-dep-tag {
+        font-size: 0.68rem;
+        padding: 0.15rem 0.5rem;
+    }
+
+    .btn-toggle-ql-chain {
+        font-size: 0.82rem;
+        padding: 0.65rem 0.85rem;
+    }
+
+    .ql-chain-collapsible-box {
+        padding: 0.85rem 0.75rem;
+    }
+
+    .ql-chain-flow {
+        font-size: 0.76rem;
+        gap: 0.35rem;
+    }
+
+    .ql-chain-node {
+        font-size: 0.74rem;
+        padding: 0.2rem 0.5rem;
     }
 
     .transcript-title-bar {
@@ -242,8 +425,25 @@
         font-size: 0.78rem;
     }
 
+    .workspace-footer-bar {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.75rem;
+    }
+
     .btn-advance-action {
-        padding: 0.8rem 1.2rem;
-        font-size: 0.86rem;
+        order: 1;
+        width: 100%;
+        justify-content: center;
+        padding: 0.85rem 1.2rem;
+        font-size: 0.88rem;
+    }
+
+    .btn-prev-action {
+        order: 2;
+        width: 100%;
+        justify-content: center;
+        padding: 0.85rem 1.2rem;
+        font-size: 0.88rem;
     }
 }

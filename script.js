@@ -499,7 +499,7 @@ function renderSimulationUI() {
     if (isDismissed) {
         simulationState.isDismissed = true;
         if (dismissalBanner) dismissalBanner.style.display = 'block';
-        if (btnAdvanceText) btnAdvanceText.textContent = `🚫 تم ترقين القيد (تجاوز الـ 6 سنوات الدراسية)`;
+        if (btnAdvanceText) btnAdvanceText.textContent = `🚫 تم ترقين القيد (تجاوز 6 سنوات دراسية)`;
         if (btnAdvance) {
             btnAdvance.disabled = true;
             btnAdvance.style.background = '#dc2626';
@@ -526,6 +526,19 @@ function renderSimulationUI() {
             btnAdvance.style.background = 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)';
             btnAdvance.style.cursor = 'pointer';
             btnAdvance.style.opacity = '1';
+        }
+    }
+
+    const btnPrev = document.getElementById('btnPreviousSemester');
+    if (btnPrev) {
+        if (simulationState.currentSem <= 1) {
+            btnPrev.disabled = true;
+            btnPrev.style.opacity = '0.45';
+            btnPrev.style.cursor = 'not-allowed';
+        } else {
+            btnPrev.disabled = false;
+            btnPrev.style.opacity = '1';
+            btnPrev.style.cursor = 'pointer';
         }
     }
 
@@ -611,7 +624,7 @@ function updateKPIs() {
     const isDismissed = extraYears > 2 || simulationState.currentSem > 12 || totalRepeatCount >= 2;
 
     if (isDismissed) {
-        valExtraYears.textContent = `🚫 ترقين القيد (تجاوز الـ 6 سنوات)`;
+        valExtraYears.textContent = `🚫 ترقين القيد (تجاوز 6 سنوات)`;
         valExtraYears.style.color = "#dc2626";
     } else if (extraYears === 0) {
         valExtraYears.textContent = "0 سنة (منتظم)";
@@ -1039,6 +1052,62 @@ async function advanceToNextSemester() {
 }
 
 /**
+ * Reverts to the previous semester allowing natural corrections
+ * without resetting the entire simulation.
+ */
+function revertToPreviousSemester() {
+    if (simulationState.currentSem <= 1) return;
+    const prevSem = simulationState.currentSem - 1;
+
+    // 1. Rebuild passedModules & failedHistory strictly from history[1 .. prevSem - 1]
+    const newPassed = {};
+    curriculumData.forEach(c => newPassed[c.code] = null);
+    const newFailedHistory = [];
+
+    for (let s = 1; s < prevSem; s++) {
+        const hist = simulationState.history[s];
+        if (hist && Array.isArray(hist)) {
+            hist.forEach(item => {
+                if (item.outcome === 'pass') {
+                    newPassed[item.code] = s;
+                } else if (item.outcome === 'fail') {
+                    const isRepeat = newFailedHistory.some(f => f.code === item.code);
+                    newFailedHistory.push({
+                        code: item.code,
+                        semFailed: s,
+                        isRepeat: isRepeat
+                    });
+                }
+            });
+        }
+    }
+
+    simulationState.passedModules = newPassed;
+    simulationState.failedHistory = newFailedHistory;
+
+    // 2. Restore activeRegistered for prevSem from history[prevSem]
+    if (simulationState.history[prevSem]) {
+        simulationState.activeRegistered = simulationState.history[prevSem].map(item => ({ ...item }));
+        delete simulationState.history[prevSem];
+    } else {
+        setupSemesterRegistration(prevSem);
+    }
+
+    // Clear any future recorded history
+    for (let s = prevSem; s <= 24; s++) {
+        if (simulationState.history[s]) {
+            delete simulationState.history[s];
+        }
+    }
+
+    simulationState.currentSem = prevSem;
+    simulationState.isDismissed = false;
+
+    renderSimulationUI();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/**
  * Builds HTML for Stage 2-Column Transcript
  * @param {number} partFilter - 0 for all stages, 1 for Part 1 (Stages 1-2), 2 for Part 2 (Stages 3-4+)
  */
@@ -1100,8 +1169,8 @@ function renderTranscriptTable() {
 
 /**
  * Opens Full-Page Graduation Academic Transcript Modal
- * Dynamically builds A4 Page Sheets (2 Stages per Page Sheet)
- * Supports 2, 3, 4 or more A4 images automatically based on total stages.
+ * Dynamically builds A4 Page Sheets (1 Stage per Page Sheet)
+ * Includes modern graduation celebration dashboard at the top
  */
 function openFullGraduationTranscriptModal() {
     const modal = document.getElementById('graduationTranscriptModal');
@@ -1129,10 +1198,39 @@ function openFullGraduationTranscriptModal() {
     const earnedEcts = getEarnedEcts();
 
     const isGraduated = earnedEcts >= 240;
-    const statusText = isGraduated ? "🎓 خريج (مستوفٍ لكافة المتطلبات)" : "⏳ قيد الدراسة";
-    const statusClass = isGraduated ? "status-pass-tag" : "status-pending-tag";
+    const pastFailures = simulationState.failedHistory;
+    const totalFailuresCount = pastFailures.length;
 
-    let fullPagesHTML = '';
+    let summaryDashboardHTML = `
+        <div class="grad-summary-dashboard-card">
+            <div class="grad-celebration-hero">
+                <span class="grad-hero-icon">🎓</span>
+                <h2 class="grad-hero-title">${isGraduated ? '🎉 مبروك التخرج من الجامعة!' : '📊 ملخص المسار الأكاديمي'}</h2>
+                <p class="grad-hero-desc">${isGraduated ? 'أتممت متطلبات التخرج بنظام مسار بولونيا الأكاديمي لقسم علوم الحاسوب في جامعة بغداد بنجاح.' : 'ملخص تفصيلي للوحدات المنجزة والسنوات الدراسية المستغرقة حتى اللحظة.'}</p>
+            </div>
+
+            <div class="grad-stats-grid">
+                <div class="grad-stat-box">
+                    <span class="grad-stat-lbl">الحالة الأكاديمية:</span>
+                    <span class="grad-stat-val" style="color: #15803d;">${isGraduated ? '🎓 خريج مستوفٍ' : '⏳ قيد الدراسة'}</span>
+                </div>
+                <div class="grad-stat-box">
+                    <span class="grad-stat-lbl">مجموع الوحدات:</span>
+                    <span class="grad-stat-val" style="color: #0284c7;">${earnedEcts} / 240 ECTS</span>
+                </div>
+                <div class="grad-stat-box">
+                    <span class="grad-stat-lbl">سنوات الدراسة:</span>
+                    <span class="grad-stat-val">${totalStudyYears} سنوات ${extraYears > 0 ? `(+${extraYears} إضافية)` : '(منتظم)'}</span>
+                </div>
+                <div class="grad-stat-box">
+                    <span class="grad-stat-lbl">سجل الرسوب التكويني:</span>
+                    <span class="grad-stat-val" style="${totalFailuresCount > 0 ? 'color:#be123c;' : 'color:#15803d;'}">${totalFailuresCount === 0 ? '✨ مسار نظيف (0)' : `${totalFailuresCount} مواد`}</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    let fullPagesHTML = summaryDashboardHTML;
 
     for (let stageNum = 1; stageNum <= totalStages; stageNum++) {
         const stageName = getStageName(stageNum);
@@ -1188,7 +1286,6 @@ function openFullGraduationTranscriptModal() {
             </div>
         `;
 
-
         if (stageNum < totalStages) {
             fullPagesHTML += `
                 <div class="page-break-divider">
@@ -1201,9 +1298,6 @@ function openFullGraduationTranscriptModal() {
     container.innerHTML = fullPagesHTML;
     modal.style.display = 'flex';
 }
-
-
-
 
 function closeFullGraduationTranscriptModal() {
     const modal = document.getElementById('graduationTranscriptModal');
@@ -1231,8 +1325,6 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
             passedCount++;
         } else if (item.outcome === 'fail') {
             failedCount++;
-        } else {
-            // Planned semester outcome - do not add to earned ECTS
         }
     });
 
@@ -1290,9 +1382,6 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
                 </div>
             </div>
         `;
-
-
-
     });
 
     return `
@@ -1322,50 +1411,469 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
     `;
 }
 
-
-
 // --------------------------------------------------------------------------
 // 4. Welcome Screen & Main Workspace Controls
 // --------------------------------------------------------------------------
-function startSimulation() {
+function startSimulation(pushState = true) {
+    const shouldPush = typeof pushState === 'boolean' ? pushState : true;
     const welcome = document.getElementById('welcomeScreen');
     const welcomeTopHeader = document.getElementById('welcomeTopHeader');
+    const qlScreen = document.getElementById('quickLookScreen');
     const mainWS = document.getElementById('mainWorkspace');
     const appHeader = document.getElementById('appHeader');
     const topSlimStrip = document.getElementById('topSlimStrip');
 
     if (welcome && mainWS) {
-        welcome.style.animation = 'fadeOut 0.3s forwards';
-        if (welcomeTopHeader) welcomeTopHeader.style.animation = 'fadeOut 0.3s forwards';
-        setTimeout(() => {
-            welcome.style.display = 'none';
-            if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
-            mainWS.style.display = 'flex';
-            if (appHeader) appHeader.style.display = 'block';
-            if (topSlimStrip) topSlimStrip.style.display = 'block';
-            mainWS.scrollIntoView({ behavior: 'smooth' });
-        }, 280);
+        // Reset simulation to zero (clean fresh start)
+        initSimulation();
+
+        if (qlScreen) qlScreen.style.display = 'none';
+        welcome.style.display = 'none';
+        if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
+        mainWS.style.display = 'flex';
+        if (appHeader) appHeader.style.display = 'block';
+        if (topSlimStrip) topSlimStrip.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        if (shouldPush) {
+            history.pushState({ screen: 'workspace' }, '', '#simulation');
+        }
     }
 }
 
-function showWelcomeScreen() {
+function showWelcomeScreen(pushState = true) {
+    const shouldPush = typeof pushState === 'boolean' ? pushState : true;
     const welcome = document.getElementById('welcomeScreen');
     const welcomeTopHeader = document.getElementById('welcomeTopHeader');
+    const qlScreen = document.getElementById('quickLookScreen');
     const mainWS = document.getElementById('mainWorkspace');
     const appHeader = document.getElementById('appHeader');
     const topSlimStrip = document.getElementById('topSlimStrip');
 
-    if (welcome && mainWS) {
+    if (welcome) {
+        // Reset simulation state whenever returning to welcome screen
+        initSimulation();
+
+        if (qlScreen) qlScreen.style.display = 'none';
         welcome.style.display = 'flex';
+        welcome.style.opacity = '1';
+        welcome.style.transform = 'translateY(0)';
         welcome.style.animation = 'fadeIn 0.35s ease-out';
         if (welcomeTopHeader) {
             welcomeTopHeader.style.display = 'flex';
+            welcomeTopHeader.style.opacity = '1';
             welcomeTopHeader.style.animation = 'fadeIn 0.35s ease-out';
         }
-        mainWS.style.display = 'none';
+        if (mainWS) mainWS.style.display = 'none';
         if (appHeader) appHeader.style.display = 'none';
         if (topSlimStrip) topSlimStrip.style.display = 'none';
         window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        if (shouldPush) {
+            history.pushState({ screen: 'welcome' }, '', '#');
+        }
+    }
+}
+
+// --------------------------------------------------------------------------
+// 4.5 Quick Look (نظرة سريعة على ارتباطات المواد) Feature Engine
+// --------------------------------------------------------------------------
+function openQuickLookScreen(pushState = true) {
+    const shouldPush = typeof pushState === 'boolean' ? pushState : true;
+    const welcome = document.getElementById('welcomeScreen');
+    const welcomeTopHeader = document.getElementById('welcomeTopHeader');
+    const qlScreen = document.getElementById('quickLookScreen');
+    const mainWS = document.getElementById('mainWorkspace');
+    const appHeader = document.getElementById('appHeader');
+    const topSlimStrip = document.getElementById('topSlimStrip');
+
+    if (welcome && qlScreen) {
+        const stageSelect = document.getElementById('qlStageSelect');
+        const courseSelect = document.getElementById('qlCourseSelect');
+        const subjectSelect = document.getElementById('qlSubjectSelect');
+        if (stageSelect) stageSelect.value = '';
+        if (courseSelect) courseSelect.value = '';
+        if (subjectSelect) subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+
+        welcome.style.display = 'none';
+        if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
+        if (mainWS) mainWS.style.display = 'none';
+        if (appHeader) appHeader.style.display = 'none';
+        if (topSlimStrip) topSlimStrip.style.display = 'none';
+
+        qlScreen.style.display = 'flex';
+        qlScreen.style.animation = 'fadeIn 0.35s ease-out';
+
+        populateQuickLookSubjects();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        if (shouldPush) {
+            history.pushState({ screen: 'quick-look' }, '', '#quick-look');
+        }
+    }
+}
+
+function closeQuickLookScreen(pushState = true) {
+    showWelcomeScreen(pushState);
+}
+
+function populateQuickLookSubjects() {
+    const stageSelect = document.getElementById('qlStageSelect');
+    const courseSelect = document.getElementById('qlCourseSelect');
+    const subjectSelect = document.getElementById('qlSubjectSelect');
+    const container = document.getElementById('quickLookResultsArea');
+    if (!stageSelect || !courseSelect || !subjectSelect) return;
+
+    const stageVal = stageSelect.value;
+    const courseVal = courseSelect.value;
+
+    if (!stageVal || !courseVal) {
+        subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+        if (container) {
+            container.innerHTML = `
+                <div class="ql-empty-state-box">
+                    <span class="ql-empty-icon">🔍</span>
+                    <p class="ql-empty-text">يرجى اختيار المرحلة والكورس ثم المادة لمعاينة شجرة الارتباطات والحرمان.</p>
+                </div>
+            `;
+        }
+        return;
+    }
+
+    const stageNum = parseInt(stageVal, 10);
+    const courseNum = parseInt(courseVal, 10);
+    const targetSem = (stageNum - 1) * 2 + courseNum;
+
+    const subjectsInSem = curriculumData.filter(c => c.sem === targetSem);
+    subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+
+    subjectsInSem.forEach((sub) => {
+        const opt = document.createElement('option');
+        opt.value = sub.code;
+        opt.textContent = `${sub.nameAr} (${sub.ects} وحدات ECTS)`;
+        subjectSelect.appendChild(opt);
+    });
+
+    if (container) {
+        container.innerHTML = `
+            <div class="ql-empty-state-box">
+                <span class="ql-empty-icon">📚</span>
+                <p class="ql-empty-text">اختر الآن إحدى مواد الكورس من القائمة أعلاه لمعاينة ارتباطاتها وشجرة الحرمان.</p>
+            </div>
+        `;
+    }
+}
+
+function renderQuickLookResults() {
+    const subjectSelect = document.getElementById('qlSubjectSelect');
+    const container = document.getElementById('quickLookResultsArea');
+    if (!subjectSelect || !container) return;
+
+    const selectedCode = subjectSelect.value;
+    const subject = curriculumMap[selectedCode];
+    if (!subject) return;
+
+    const stageNum = Math.ceil(subject.sem / 2);
+    const stageName = getStageName(stageNum);
+    const courseTitle = getCourseName(subject.sem);
+    const fullOriginName = `${stageName} - ${courseTitle}`;
+
+    // Prerequisites of this target subject
+    let prereqInfoHTML = '';
+    if (subject.prereq && subject.prereq.length > 0) {
+        const tagsHTML = subject.prereq.map(pCode => {
+            const pMod = curriculumMap[pCode];
+            const pName = pMod ? pMod.nameAr : pCode;
+            let pStageCourse = '';
+            if (pMod) {
+                const pStage = Math.ceil(pMod.sem / 2);
+                const pCourse = getCourseName(pMod.sem);
+                const pStageName = getStageName(pStage);
+                pStageCourse = `${pStageName} • ${pCourse}`;
+            }
+            return `
+                <span class="ql-prereq-tag">
+                    <span class="ql-prereq-name">${pName}</span>
+                    ${pStageCourse ? `<span class="ql-prereq-meta">(${pStageCourse})</span>` : ''}
+                </span>
+            `;
+        }).join('');
+        prereqInfoHTML = `
+            <div class="ql-target-prereqs-box">
+                <span class="ql-prereqs-label">🔑 تتطلب النجاح المسبق في:</span>
+                <div class="ql-prereqs-tags-list">
+                    ${tagsHTML}
+                </div>
+            </div>
+        `;
+    } else {
+        prereqInfoHTML = `
+            <div class="ql-target-prereqs-box">
+                <span class="ql-prereqs-label">🔑 المتطلب السابق:</span>
+                <span class="ql-prereq-none-text">لا توجد متطلبات سابقة (مادة تأسيسية أولية)</span>
+            </div>
+        `;
+    }
+
+    // Direct dependents (subjects where subject.code is in prereq)
+    const directDependents = curriculumData.filter(c => c.prereq.includes(selectedCode));
+
+    // All downstream dependents (recursive)
+    const allDownstream = getDownstreamDependencies(selectedCode);
+
+    // Indirect dependents = all downstream that are not direct
+    const indirectDependents = allDownstream.filter(c => !directDependents.some(d => d.code === c.code));
+
+    let impactContentHTML = '';
+
+    if (directDependents.length === 0 && indirectDependents.length === 0) {
+        impactContentHTML = `
+            <div class="ql-impact-grid">
+                <div class="ql-impact-card ql-safe-box">
+                    <div class="ql-impact-header">
+                        <span class="ql-impact-icon">✅</span>
+                        <h3 class="ql-impact-title">مادة طرفية مستقلة (لا تسبب حرمان لمواد أخرى)</h3>
+                    </div>
+                    <div class="ql-safe-desc">
+                        لا توجد أي مادة دراسية أخرى في الخطة تعتمد على هذه المادة كمتطلب سابق.<br>
+                        <strong>تأثير الرسوب التكويني:</strong> لن يحرم الطالب من تسجيل أي مادة دراسية في الفصول اللاحقة، لكنه سيحتاج لإعادة المادة لاحقاً لإكمال متطلبات 240 وحدة، <span style="color: #dc2626; font-weight: 900;">وسيؤدي إلى سنة دراسية خامسة بكل الأحوال بسبب سقف 30 وحدة المحدود للكورس الواحد.</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        // Direct dependents: Split into Next Semester vs Other Semesters
+        const immediateNextSemDirect = directDependents.filter(dep => dep.sem === subject.sem + 1);
+        const laterSemDirect = directDependents.filter(dep => dep.sem > subject.sem + 1);
+
+        let directSubgroupsHTML = '';
+
+        if (immediateNextSemDirect.length > 0) {
+            const listHTML = immediateNextSemDirect.map(dep => {
+                const depStage = Math.ceil(dep.sem / 2);
+                const depStageName = getStageName(depStage);
+                const depCourse = getCourseName(dep.sem);
+                return `
+                    <div class="ql-dep-item-card">
+                        <div class="ql-dep-item-top">
+                            <span class="ql-dep-item-title">${dep.nameAr}</span>
+                            <span class="ql-dep-ects-badge">${dep.ects} ECTS</span>
+                        </div>
+                        <div class="ql-dep-item-bottom">
+                            <span class="ql-dep-item-stage">${depStageName} • ${depCourse}</span>
+                            <span class="ql-dep-tag tag-direct-block">🚫 حرمان فوري مباشر</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            directSubgroupsHTML += `
+                <div class="ql-direct-subgroup">
+                    <div class="ql-subgroup-title">
+                        <span>⚡ حرمان مباشر من الكورس القادم (${immediateNextSemDirect.length} مواد):</span>
+                    </div>
+                    <div class="ql-deps-list">
+                        ${listHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        if (laterSemDirect.length > 0) {
+            const listHTML = laterSemDirect.map(dep => {
+                const depStage = Math.ceil(dep.sem / 2);
+                const depStageName = getStageName(depStage);
+                const depCourse = getCourseName(dep.sem);
+                return `
+                    <div class="ql-dep-item-card">
+                        <div class="ql-dep-item-top">
+                            <span class="ql-dep-item-title">${dep.nameAr}</span>
+                            <span class="ql-dep-ects-badge">${dep.ects} ECTS</span>
+                        </div>
+                        <div class="ql-dep-item-bottom">
+                            <span class="ql-dep-item-stage">${depStageName} • ${depCourse}</span>
+                            <span class="ql-dep-tag tag-direct-block">🔒 حرمان مباشر من كورسات لاحقة</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            directSubgroupsHTML += `
+                <div class="ql-direct-subgroup">
+                    <div class="ql-subgroup-title">
+                        <span>📅 حرمان مباشر من الكورسات الأخرى اللاحقة (${laterSemDirect.length} مواد):</span>
+                    </div>
+                    <div class="ql-subgroup-note-yellow">
+                        <span class="subgroup-note-icon">💡</span>
+                        <span><strong>ملاحظة هامة:</strong> إذا اجتاز الطالب مادة (${subject.nameAr}) ونجح فيها عند إعادتها قبل حلول هذه الفصول الدراسية، فسيتمكن من تسجيل هذه المواد وخوضها في كورساتها المحددة بصورة طبيعية دون أي تأخير.</span>
+                    </div>
+                    <div class="ql-deps-list">
+                        ${listHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Indirect dependents cards
+        let indirectListHTML = '';
+        if (indirectDependents.length > 0) {
+            indirectListHTML = indirectDependents.map(dep => {
+                const depStage = Math.ceil(dep.sem / 2);
+                const depStageName = getStageName(depStage);
+                const depCourse = getCourseName(dep.sem);
+                return `
+                    <div class="ql-dep-item-card">
+                        <div class="ql-dep-item-top">
+                            <span class="ql-dep-item-title">${dep.nameAr}</span>
+                            <span class="ql-dep-ects-badge">${dep.ects} ECTS</span>
+                        </div>
+                        <div class="ql-dep-item-bottom">
+                            <span class="ql-dep-item-stage">${depStageName} • ${depCourse}</span>
+                            <span class="ql-dep-tag tag-indirect-block">⛓️ حرمان تسلسلي تراكمي</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Build chain paths in a dedicated standalone card box
+        let chainBoxHTML = '';
+        const allPaths = [];
+        function buildChain(currCode, currentPath) {
+            const nexts = curriculumData.filter(c => c.prereq.includes(currCode));
+            if (nexts.length === 0) {
+                if (currentPath.length > 1) {
+                    allPaths.push([...currentPath]);
+                }
+                return;
+            }
+            nexts.forEach(n => {
+                buildChain(n.code, [...currentPath, n.nameAr]);
+            });
+        }
+        buildChain(selectedCode, [subject.nameAr]);
+
+        if (allPaths.length > 0) {
+            const chainItemsHTML = allPaths.map((path, pIdx) => {
+                const nodesHTML = path.map((nodeName, idx) => {
+                    const isFirst = idx === 0;
+                    return `<span class="ql-chain-node" style="${isFirst ? 'font-weight:900;border-color:#0284c7;background:#f0f9ff;color:#0369a1;' : ''}">${nodeName}</span>`;
+                }).join('<span class="ql-chain-arrow">←</span>');
+                return `
+                    <div class="ql-chain-flow-item">
+                        <span class="ql-chain-path-num">مسار ${pIdx + 1}:</span>
+                        <div class="ql-chain-flow">${nodesHTML}</div>
+                    </div>
+                `;
+            }).join('');
+
+            chainBoxHTML = `
+                <div class="ql-impact-card ql-chains-box" id="qlChainsBox">
+                    <div class="ql-impact-header">
+                        <span class="ql-impact-icon">⛓️</span>
+                        <h3 class="ql-impact-title">مسار سلسلة الاعتماد الأكاديمي المتسلسل</h3>
+                    </div>
+                    <p class="ql-impact-desc">
+                        تتبع شجرة الاعتماد والارتباط المباشر وغير المباشر من هذه المادة وصولاً للمواد النهائية:
+                    </p>
+                    <button type="button" class="btn-toggle-ql-chain" id="btnToggleQlChain">
+                        <span>🗺️ استكشاف وتتبع مسارات السلسلة</span>
+                        <span class="chain-toggle-hint" id="qlChainHintText">اضغط لعرض المسارات (${allPaths.length} مسارات) ▾</span>
+                    </button>
+                    <div id="qlChainContent" class="ql-chain-collapsible-box" style="display: none;">
+                        ${chainItemsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        impactContentHTML = `
+            <div class="ql-impact-grid">
+                ${directDependents.length > 0 ? `
+                    <div class="ql-impact-card ql-direct-box">
+                        <div class="ql-impact-header">
+                            <span class="ql-impact-icon">🚨</span>
+                            <h3 class="ql-impact-title">الحرمان المباشر (${directDependents.length} مواد)</h3>
+                        </div>
+                        <p class="ql-impact-desc">
+                            الرسوب التكويني في (${subject.nameAr}) يؤدي إلى حرمان الطالب ومنعه من تسجيل المواد التالية:
+                        </p>
+                        <div class="ql-direct-subgroups-wrapper">
+                            ${directSubgroupsHTML}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${indirectDependents.length > 0 ? `
+                    <div class="ql-impact-card ql-indirect-box">
+                        <div class="ql-impact-header">
+                            <span class="ql-impact-icon">⛓️</span>
+                            <h3 class="ql-impact-title">الحرمان غير المباشر والتسلسلي (${indirectDependents.length} مواد)</h3>
+                        </div>
+                        <p class="ql-impact-desc">
+                            هذه المواد ترتبط بشكل غير مباشر بالمادة أعلاه وقد يؤدي الرسوب إلى تأخير تسجيل بعض المواد وعدم خوضها في كورساتها المحددة، ويمكنك استكشاف المسارات المرتبطة من خلال <a href="#qlChainsBox" id="linkJumpToChains" class="ql-chain-hyperlink">مسار سلسلة الاعتماد الأكاديمي المتسلسل</a>.
+                        </p>
+                        <div class="ql-deps-list">
+                            ${indirectListHTML}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${chainBoxHTML}
+            </div>
+        `;
+    }
+
+    container.innerHTML = `
+        <div class="ql-target-card">
+            <div class="ql-target-header">
+                <div class="ql-target-title-block">
+                    <h3 class="ql-target-name-ar">${subject.nameAr}</h3>
+                    <span class="ql-target-name-en">${subject.nameEn}</span>
+                </div>
+                <div class="ql-target-meta-badges">
+                    <span class="ql-pill-ects">${formatUnits(subject.ects)}</span>
+                    <span class="ql-pill-stage">${fullOriginName}</span>
+                </div>
+            </div>
+            ${prereqInfoHTML}
+        </div>
+
+        ${impactContentHTML}
+    `;
+
+    const btnToggleChain = document.getElementById('btnToggleQlChain');
+    if (btnToggleChain) {
+        btnToggleChain.addEventListener('click', () => {
+            const chainBox = document.getElementById('qlChainContent');
+            const hintText = document.getElementById('qlChainHintText');
+            if (chainBox) {
+                const isHidden = chainBox.style.display === 'none';
+                chainBox.style.display = isHidden ? 'flex' : 'none';
+                if (hintText) {
+                    hintText.textContent = isHidden ? 'اضغط لإخفاء المسارات ▴' : 'اضغط لعرض المسارات ▾';
+                }
+            }
+        });
+    }
+
+    const linkJump = document.getElementById('linkJumpToChains');
+    if (linkJump) {
+        linkJump.addEventListener('click', (e) => {
+            e.preventDefault();
+            const chainBox = document.getElementById('qlChainContent');
+            const hintText = document.getElementById('qlChainHintText');
+            const chainsCard = document.getElementById('qlChainsBox');
+            if (chainBox) {
+                chainBox.style.display = 'flex';
+                if (hintText) {
+                    hintText.textContent = 'اضغط لإخفاء المسارات ▴';
+                }
+            }
+            if (chainsCard) {
+                chainsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
     }
 }
 
@@ -1375,12 +1883,44 @@ function showWelcomeScreen() {
 document.addEventListener('DOMContentLoaded', () => {
     const btnStart = document.getElementById('btnStartSimulation');
     if (btnStart) {
-        btnStart.addEventListener('click', startSimulation);
+        btnStart.addEventListener('click', () => startSimulation(true));
     }
 
-    const btnHelp = document.getElementById('btnShowHelp');
-    if (btnHelp) {
-        btnHelp.addEventListener('click', showWelcomeScreen);
+    const btnOpenQuickLook = document.getElementById('btnOpenQuickLook');
+    if (btnOpenQuickLook) {
+        btnOpenQuickLook.addEventListener('click', () => openQuickLookScreen(true));
+    }
+
+    const btnBackFromQuickLook = document.getElementById('btnBackFromQuickLook');
+    if (btnBackFromQuickLook) {
+        btnBackFromQuickLook.addEventListener('click', () => closeQuickLookScreen(true));
+    }
+
+    const btnReturnHome = document.getElementById('btnReturnToHome');
+    if (btnReturnHome) {
+        btnReturnHome.addEventListener('click', () => showWelcomeScreen(true));
+    }
+
+    const qlStageSelect = document.getElementById('qlStageSelect');
+    if (qlStageSelect) {
+        qlStageSelect.addEventListener('change', populateQuickLookSubjects);
+    }
+
+    const qlCourseSelect = document.getElementById('qlCourseSelect');
+    if (qlCourseSelect) {
+        qlCourseSelect.addEventListener('change', populateQuickLookSubjects);
+    }
+
+    const qlSubjectSelect = document.getElementById('qlSubjectSelect');
+    if (qlSubjectSelect) {
+        qlSubjectSelect.addEventListener('change', renderQuickLookResults);
+    }
+
+    const btnPrev = document.getElementById('btnPreviousSemester');
+    if (btnPrev) {
+        btnPrev.addEventListener('click', () => {
+            revertToPreviousSemester();
+        });
     }
 
     document.getElementById('btnRestartProcess').addEventListener('click', async () => {
@@ -1407,6 +1947,24 @@ document.addEventListener('DOMContentLoaded', () => {
             closeFullGraduationTranscriptModal();
         });
     }
+
+    // Browser Back / Forward Button Navigation Support
+    function handleHistoryNavigation(e) {
+        const stateScreen = e?.state?.screen;
+        const hash = window.location.hash;
+
+        if (stateScreen === 'quick-look' || hash === '#quick-look') {
+            openQuickLookScreen(false);
+        } else if (stateScreen === 'workspace' || hash === '#simulation') {
+            startSimulation(false);
+        } else {
+            showWelcomeScreen(false);
+        }
+    }
+
+    history.replaceState({ screen: 'welcome' }, '', window.location.pathname);
+    window.addEventListener('popstate', handleHistoryNavigation);
+    window.addEventListener('hashchange', handleHistoryNavigation);
 
     initSimulation();
 });

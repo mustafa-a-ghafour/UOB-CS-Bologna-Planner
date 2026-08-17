@@ -48,9 +48,6 @@
                         </div>
                         <div class="brand-title-row">
                             <h1 class="brand-title">محاكي مسار بولونيا</h1>
-                            <button id="btnShowHelp" class="btn-help-nav">
-                                <span>💡 التعليمات والقوانين</span>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -66,6 +63,11 @@
                         </div>
                         <span class="metric-compact-tag" id="valFailedHistory">0 رسوب</span>
                     </div>
+
+                    <!-- Return to Home Landing Button in Top Navbar -->
+                    <button id="btnReturnToHome" class="btn-back-home" type="button" title="العودة للقائمة الرئيسية">
+                        <span>🔙 العودة للرئيسية</span>
+                    </button>
                 </div>
 
             </div>
@@ -93,7 +95,7 @@
                 <div class="welcome-hero-content">
                     <h2 class="welcome-hero-title">دليلك التفاعلي لفهم مسار نظام بولونيا الأكاديمي</h2>
                     <p class="welcome-hero-desc">
-                        تصميم تفاعلي خاص لطلبة قسم علوم الحاسوب في جامعة بغداد لمحاكاة الانتقال بين الكورسات، حساب وحدات الـ ECTS، وفهم قوانين الرسوب والسنوات الإضافية بدقة.
+                        تصميم تفاعلي خاص لطلبة قسم علوم الحاسوب في جامعة بغداد لمحاكاة الانتقال بين الكورسات، حساب وحدات ECTS، وفهم قوانين الرسوب والسنوات الإضافية بدقة.
                     </p>
                 </div>
             </div>
@@ -112,7 +114,7 @@
                     <div class="welcome-feature-card">
                         <div class="feature-icon-wrapper">🔄</div>
                         <h4>محاكاة النجاح والرسوب</h4>
-                        <p>محاكاة فعلية دقيقة للخيارات المختلفة بين النجاح والرسوب في المواد، تعكس التأثير الأكاديمي الفوري على المسار الدراسي والسنوات الإضافية.</p>
+                        <p>محاكاة فعلية دقيقة للخيارات المختلفة بين النجاح والرسوب في المواد، تعكس التأثير الفوري على المسار الدراسي والسنوات الإضافية.</p>
                     </div>
 
                     <div class="welcome-feature-card">
@@ -125,7 +127,7 @@
 
             <!-- Transferred Notes & Rules Boxes -->
             <div class="welcome-notes-wrapper">
-                <h3 class="welcome-section-heading">⚠️ الملاحظات والقواعد الأكاديمية الهامة:</h3>
+                <h3 class="welcome-section-heading">⚠️ الملاحظات والقواعد الهامة:</h3>
 
                 <!-- Blue Advisor Tip Box -->
                 <div class="advisor-tip-box">
@@ -140,11 +142,85 @@
                 </div>
             </div>
 
-            <!-- Welcome Screen Primary Action Button -->
+            <!-- Welcome Screen Primary Action Buttons -->
             <div class="welcome-action-bar">
                 <button id="btnStartSimulation" class="btn-start-hero">
                     <span>🚀 أبدأ المحاكاة الآن</span>
                 </button>
+                <button id="btnOpenQuickLook" class="btn-quick-look-hero" type="button">
+                    <span>🔍 نظرة سريعة على ارتباطات المواد</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Quick Look Screen (نظرة سريعة على ارتباطات المواد) -->
+        <section id="quickLookScreen" class="quick-look-screen-card" style="display: none;">
+            <div class="quick-look-header-bar">
+                <div class="quick-look-title-group">
+                    <div class="quick-look-badge">
+                        <span class="badge-dot"></span>
+                        <span>شجرة المواد والارتباطات التكوينية</span>
+                    </div>
+                    <h2 class="quick-look-title">🔍 نظرة سريعة على ارتباطات المواد</h2>
+                    <p class="quick-look-subtitle">
+                        اختر المرحلة والكورس والمادة لاستكشاف المتطلبات وتأثير الرسوب التكويني والحرمان المباشر وغير المباشر في المراحل القادمة.
+                    </p>
+                </div>
+                <button id="btnBackFromQuickLook" class="btn-back-home" type="button">
+                    <span>🔙 العودة للرئيسية</span>
+                </button>
+            </div>
+
+            <!-- Global Bologna Rule Tip Box -->
+            <div class="quick-look-rule-alert">
+                <span class="tip-icon">⚠️</span>
+                <div class="rule-alert-text">
+                    <strong>تنبيه هام:</strong> أي رسوب تكويني يؤدي إلى سنة دراسية خامسة بكل الأحوال (سواء كانت المادة مرتبطة بحرمان مباشر أو لا) بسبب سقف 30 وحدة لكل كورس.
+                </div>
+            </div>
+
+            <!-- Selectors Filter Card -->
+            <div class="quick-look-selectors-box">
+                <div class="ql-selectors-top-row">
+                    <div class="selector-field">
+                        <label for="qlStageSelect">🎓 المرحلة الدراسية:</label>
+                        <div class="custom-select-wrapper">
+                            <select id="qlStageSelect" class="ql-select-input">
+                                <option value="" disabled selected>اختر المرحلة</option>
+                                <option value="1">المرحلة الأولى</option>
+                                <option value="2">المرحلة الثانية</option>
+                                <option value="3">المرحلة الثالثة</option>
+                                <option value="4">المرحلة الرابعة</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="selector-field">
+                        <label for="qlCourseSelect">📘 الكورس:</label>
+                        <div class="custom-select-wrapper">
+                            <select id="qlCourseSelect" class="ql-select-input">
+                                <option value="" disabled selected>اختر الكورس</option>
+                                <option value="1">الكورس الأول</option>
+                                <option value="2">الكورس الثاني</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="selector-field subject-field-full">
+                    <label for="qlSubjectSelect">📚 اختر المادة الدراسية لمعاينة ارتباطاتها:</label>
+                    <div class="custom-select-wrapper">
+                        <select id="qlSubjectSelect" class="ql-select-input ql-select-subject">
+                            <option value="" disabled selected>اختر المادة</option>
+                            <!-- Dynamically filled -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results View Area -->
+            <div id="quickLookResultsArea" class="quick-look-results-area">
+                <!-- Dynamically populated by JS -->
             </div>
         </section>
 
@@ -252,9 +328,13 @@
 
                 </div>
 
-                <!-- Dynamic Step Advance Action Button -->
+                <!-- Dynamic Step Advance & Previous Action Buttons -->
                 <div class="workspace-footer-bar">
-                    <button id="btnAdvanceSemester" class="btn-advance-action" style="width: 100%; justify-content: center;">
+                    <button id="btnPreviousSemester" class="btn-prev-action" type="button" title="العودة وتعديل الكورس السابق">
+                        <span class="btn-arrow">➡️</span>
+                        <span>العودة للكورس السابق</span>
+                    </button>
+                    <button id="btnAdvanceSemester" class="btn-advance-action" type="button">
                         <span id="btnAdvanceText">الإنتقال إلى المرحلة الأولى - الكورس الثاني</span>
                         <span class="btn-arrow">⬅️</span>
                     </button>

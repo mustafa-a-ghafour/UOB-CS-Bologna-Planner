@@ -1,3 +1,4 @@
+
 /**
  * Bologna Process Interactive Student Journey Simulator
  * Department of Computer Science - University of Baghdad
@@ -1550,7 +1551,7 @@ function populateQuickLookSubjects() {
     subjectsInSem.forEach((sub) => {
         const opt = document.createElement('option');
         opt.value = sub.code;
-        opt.textContent = `${sub.nameAr} (${sub.ects} وحدات ECTS)`;
+        opt.textContent = sub.nameAr;
         subjectSelect.appendChild(opt);
     });
 
@@ -1736,7 +1737,7 @@ function renderQuickLookResults() {
             }).join('');
         }
 
-        // Build chain paths in a dedicated standalone card box
+        // Build direct & indirect chain paths in a dedicated standalone card box
         let chainBoxHTML = '';
         const allPaths = [];
         function buildChain(currCode, currentPath) {
@@ -1748,25 +1749,76 @@ function renderQuickLookResults() {
                 return;
             }
             nexts.forEach(n => {
-                buildChain(n.code, [...currentPath, n.nameAr]);
+                buildChain(n.code, [...currentPath, n]);
             });
         }
-        buildChain(selectedCode, [subject.nameAr]);
+        buildChain(selectedCode, [subject]);
 
-        if (allPaths.length > 0) {
-            const chainItemsHTML = allPaths.map((path, pIdx) => {
-                const nodesHTML = path.map((nodeName, idx) => {
-                    const isFirst = idx === 0;
-                    return `<span class="ql-chain-node" style="${isFirst ? 'font-weight:900;border-color:#0284c7;background:#f0f9ff;color:#0369a1;' : ''}">${nodeName}</span>`;
+        // Direct deprivation paths (1-to-1 direct block)
+        const directPathsHTML = directDependents.map((dep, pIdx) => {
+            const depStage = Math.ceil(dep.sem / 2);
+            const depStageName = getStageName(depStage);
+            const depCourse = getCourseName(dep.sem);
+            const isImmediateNext = (dep.sem === subject.sem + 1);
+            const timingBadge = isImmediateNext
+                ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ حرمان فوري (الكورس القادم)</span>`
+                : `<span class="ql-chain-timing-badge badge-timing-later">📅 حرمان من كورس لاحق</span>`;
+
+            return `
+                <div class="ql-chain-flow-item">
+                    <div class="ql-chain-flow-meta">
+                        <div class="ql-chain-meta-badges">
+                            <span class="ql-chain-stage-meta">${depStageName} • ${depCourse}</span>
+                            ${timingBadge}
+                        </div>
+                    </div>
+                    <div class="ql-chain-flow">
+                        <span class="ql-chain-node node-root">${subject.nameAr}</span>
+                        <span class="ql-chain-arrow">←</span>
+                        <span class="ql-chain-node node-direct">${dep.nameAr}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Indirect deprivation paths (multi-step cascading chains)
+        const indirectPaths = allPaths.filter(p => p.length > 2);
+        let indirectPathsHTML = '';
+        if (indirectPaths.length > 0) {
+            indirectPathsHTML = indirectPaths.map((path, pIdx) => {
+                const firstDep = path[1];
+                const isImmediateNext = (firstDep.sem === subject.sem + 1);
+                const timingBadge = isImmediateNext
+                    ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري (الكورس القادم)</span>`
+                    : `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span>`;
+
+                const nodesHTML = path.map((item, idx) => {
+                    const nodeName = item.nameAr;
+                    if (idx === 0) {
+                        return `<span class="ql-chain-node node-root">${nodeName}</span>`;
+                    } else if (idx === 1) {
+                        return `<span class="ql-chain-node node-direct">${nodeName}</span>`;
+                    } else {
+                        return `<span class="ql-chain-node node-indirect">${nodeName}</span>`;
+                    }
                 }).join('<span class="ql-chain-arrow">←</span>');
+
                 return `
                     <div class="ql-chain-flow-item">
-                        <span class="ql-chain-path-num">مسار ${pIdx + 1}:</span>
+                        <div class="ql-chain-flow-meta">
+                            <div class="ql-chain-meta-badges">
+                                ${timingBadge}
+                            </div>
+                        </div>
                         <div class="ql-chain-flow">${nodesHTML}</div>
                     </div>
                 `;
             }).join('');
+        }
 
+        const totalPathsCount = directDependents.length + indirectPaths.length;
+
+        if (totalPathsCount > 0) {
             chainBoxHTML = `
                 <div class="ql-impact-card ql-chains-box" id="qlChainsBox">
                     <div class="ql-impact-header">
@@ -1774,14 +1826,42 @@ function renderQuickLookResults() {
                         <h3 class="ql-impact-title">مسار سلسلة الاعتماد الأكاديمي المتسلسل</h3>
                     </div>
                     <p class="ql-impact-desc">
-                        تتبع شجرة الاعتماد والارتباط المباشر وغير المباشر من هذه المادة وصولاً للمواد النهائية:
+                        تتبع مسارات الاعتماد الأكاديمي مقسمة إلى حرمان مباشر وحرمان غير مباشر (تسلسلي):
                     </p>
                     <button type="button" class="btn-toggle-ql-chain" id="btnToggleQlChain">
                         <span>🗺️ استكشاف وتتبع مسارات السلسلة</span>
-                        <span class="chain-toggle-hint" id="qlChainHintText">اضغط لعرض المسارات (${allPaths.length} مسارات) ▾</span>
+                        <span class="chain-toggle-hint" id="qlChainHintText">اضغط لعرض المسارات (${totalPathsCount} مسار) ▾</span>
                     </button>
                     <div id="qlChainContent" class="ql-chain-collapsible-box" style="display: none;">
-                        ${chainItemsHTML}
+                        <!-- قسم مسارات الحرمان المباشر -->
+                        <div class="ql-chain-category-card">
+                            <div class="ql-chain-category-header">
+                                <span class="ql-chain-category-badge badge-direct">🚨 مسارات الحرمان المباشر (${directDependents.length} مسار)</span>
+                                <span class="ql-chain-category-subtitle">الارتباطات المباشرة (حرمان فوري من الكورس القادم أو من كورسات لاحقة):</span>
+                            </div>
+                            <div class="ql-chain-paths-container">
+                                ${directPathsHTML}
+                            </div>
+                        </div>
+
+                        <!-- قسم مسارات الحرمان غير المباشر (التسلسلي) -->
+                        ${indirectPathsHTML ? `
+                        <div class="ql-chain-category-card">
+                            <div class="ql-chain-category-header">
+                                <span class="ql-chain-category-badge badge-indirect">⛓️ مسارات الحرمان غير المباشر والتسلسلي (${indirectPaths.length} مسار)</span>
+                                <span class="ql-chain-category-subtitle">السلاسل الممتدة والتأثير التراكمي عبر الفصول والمراحل:</span>
+                            </div>
+                            <div class="ql-chain-paths-container">
+                                ${indirectPathsHTML}
+                            </div>
+                        </div>
+                        ` : `
+                        <div class="ql-chain-category-card ql-chain-empty-card">
+                            <div class="ql-chain-empty-notice">
+                                <span>✨ لا توجد مسارات حرمان غير مباشر أو سلاسل تراكمية لاحقة تتفرع من هذه المادة.</span>
+                            </div>
+                        </div>
+                        `}
                     </div>
                 </div>
             `;

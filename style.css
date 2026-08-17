@@ -1,3 +1,4 @@
+
 /* ==========================================================================
    Bologna Process Interactive Academic Simulator - Enhanced Premium Palette
    University of Baghdad - Department of Computer Science
@@ -1010,21 +1011,89 @@ body {
 .ql-chain-collapsible-box {
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: var(--radius-md);
-    padding: 1.1rem;
+    gap: 1rem;
+    background: transparent;
+    border: none;
+    padding: 0;
     animation: fadeIn 0.3s ease-out;
+}
+
+.ql-chain-category-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
     box-shadow: var(--shadow-subtle);
+}
+
+.ql-chain-category-card.ql-chain-empty-card {
+    background: #f8fafc;
+    border-style: dashed;
+    padding: 0.85rem 1.1rem;
+}
+
+.ql-chain-empty-notice {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.ql-chain-category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1.5px solid #f1f5f9;
+}
+
+.ql-chain-category-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.84rem;
+    font-weight: 900;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+}
+
+.ql-chain-category-badge.badge-direct {
+    background: #ffe4e6;
+    color: #e11d48;
+    border: 1px solid #fecdd3;
+}
+
+.ql-chain-category-badge.badge-indirect {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde047;
+}
+
+.ql-chain-category-subtitle {
+    font-size: 0.76rem;
+    color: #64748b;
+    font-weight: 700;
+}
+
+.ql-chain-paths-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
 }
 
 .ql-chain-flow-item {
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.45rem;
     padding-bottom: 0.85rem;
-    border-bottom: 1.5px dashed #cbd5e1;
+    border-bottom: 1.5px dashed #e2e8f0;
 }
 
 .ql-chain-flow-item:last-child {
@@ -1033,10 +1102,50 @@ body {
     margin-bottom: 0;
 }
 
-.ql-chain-path-num {
-    font-size: 0.74rem;
+.ql-chain-flow-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.ql-chain-meta-badges {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.ql-chain-stage-meta {
+    font-size: 0.72rem;
     font-weight: 800;
-    color: #64748b;
+    color: #0284c7;
+    background: #f0f9ff;
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    border: 1px solid #bae6fd;
+}
+
+.ql-chain-timing-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.15rem 0.55rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.ql-chain-timing-badge.badge-timing-next {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
+.ql-chain-timing-badge.badge-timing-later {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde047;
 }
 
 .ql-chain-flow {
@@ -1058,6 +1167,27 @@ body {
     box-shadow: var(--shadow-subtle);
     display: inline-flex;
     align-items: center;
+}
+
+.ql-chain-node.node-root {
+    font-weight: 900;
+    border-color: #0284c7;
+    background: #f0f9ff;
+    color: #0369a1;
+}
+
+.ql-chain-node.node-direct {
+    font-weight: 800;
+    border-color: #fca5a5;
+    background: #fff1f2;
+    color: #be123c;
+}
+
+.ql-chain-node.node-indirect {
+    font-weight: 800;
+    border-color: #fde047;
+    background: #fefce8;
+    color: #854d0e;
 }
 
 .ql-chain-arrow {

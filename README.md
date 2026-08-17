@@ -1,4 +1,4 @@
-# محاكي مسار بولونيا الأكاديمي | Bologna Process Academic Simulator
+# 🎓 محاكي مسار بولونيا الأكاديمي | Bologna Process Academic Simulator
 > **قسم علوم الحاسوب - كلية العلوم - جامعة بغداد**  
 > **Department of Computer Science - College of Science - University of Baghdad**
 
@@ -6,15 +6,15 @@
 
 ## 📌 نبذة عن الأداة (Overview)
 
-### 🇮🇶 العربية
+### 🇮🇶 <img src="https://flagcdn.com/24x18/iq.png" width="22" height="16" alt="علم العراق"> اللغة العربية
 أداة متقدمة لمساعدة طلبة **قسم علوم الحاسوب في جامعة بغداد** في تسجيل موادهم الدراسية ومعرفة مسارهم الأكاديمي بدقة في حال حدوث **الرسوب التكويني**، وفهم كيفية تأثيره على المتطلبات المسبقة، وتوزيع الفصول الدراسية، واحتساب السنوات الإضافية وفق لوائح مسار بولونيا المعتمد.
 
-### 🇬🇧 English
+### 🇬🇧 <img src="https://flagcdn.com/24x18/gb.png" width="22" height="16" alt="UK Flag"> English
 A specialized academic tool designed to help **Computer Science students at the University of Baghdad** plan their course registration and track their academic trajectory in cases of **Formative Assessment Failure**, illustrating its impact on prerequisite chains, semester scheduling, and additional study years under the Bologna Process.
 
 ---
 
-## ⚙️ آلية عمل النظام (System Mechanisms)
+## 🇮🇶 <img src="https://flagcdn.com/24x18/iq.png" width="22" height="16" alt="Iraq Flag"> آلية عمل النظام (باللغة العربية)
 
 ### 1. التحقق من المتطلبات المسبقة (Prerequisite Validation)
 - فحص ترابط المواد الأكاديمية تسلسلياً بحيث يشترط اجتياز المادة المسبقة بنجاح قبل السماح بتسجيل المادة المعتمدة عليها في الفصول اللاحقة.
@@ -43,7 +43,7 @@ A specialized academic tool designed to help **Computer Science students at the 
 
 ---
 
-## 🛠️ Operational Mechanisms (English)
+## 🇬🇧 <img src="https://flagcdn.com/24x18/gb.png" width="22" height="16" alt="UK Flag"> Operational Mechanisms (English)
 
 ### 1. Prerequisite Chain Validation
 - Sequentially validates course dependencies, preventing students from registering for advanced courses until their prerequisite requirements are fulfilled.

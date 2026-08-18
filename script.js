@@ -1217,7 +1217,7 @@ function openFullGraduationTranscriptModal() {
                 </div>
                 <div class="grad-stat-box">
                     <span class="grad-stat-lbl">مجموع الوحدات:</span>
-                    <span class="grad-stat-val" style="color: #0284c7;">${earnedEcts} / 240 ECTS</span>
+                    <span class="grad-stat-val" style="color: #0284c7;">${earnedEcts} / 240 وحدة</span>
                 </div>
                 <div class="grad-stat-box">
                     <span class="grad-stat-lbl">سنوات الدراسة:</span>
@@ -1225,7 +1225,7 @@ function openFullGraduationTranscriptModal() {
                 </div>
                 <div class="grad-stat-box">
                     <span class="grad-stat-lbl">سجل الرسوب التكويني:</span>
-                    <span class="grad-stat-val" style="${totalFailuresCount > 0 ? 'color:#be123c;' : 'color:#15803d;'}">${totalFailuresCount === 0 ? '✨ مسار نظيف (0)' : `${totalFailuresCount} مواد`}</span>
+                    <span class="grad-stat-val" style="${totalFailuresCount > 0 ? 'color:#be123c;' : 'color:#15803d;'}">${totalFailuresCount === 0 ? '✨ مسار طبيعي (0)' : `${totalFailuresCount} مواد`}</span>
                 </div>
             </div>
         </div>
@@ -1246,28 +1246,20 @@ function openFullGraduationTranscriptModal() {
         if (!hasModulesInStage) continue;
 
         const cleanStageName = stageName.replace(/[⚠️🎓]/g, '').trim();
-        const imageTitleName = `السجل الأكاديمي - ${cleanStageName}`;
+        const imageTitleName = `مسار الطالب - ${cleanStageName}`;
+
+        const isRegularTrack = (totalStages <= 4 && extraYears === 0);
+        const badgePillClass = isRegularTrack ? 'page-badge-pill pill-green' : 'page-badge-pill pill-red';
 
         fullPagesHTML += `
             <div id="gradModalTranscriptPage${stageNum}" class="exportable-transcript-page" data-stage-name="${imageTitleName}" data-page-index="${stageNum}">
                 <div class="official-doc-header">
                     <div class="doc-header-top">
                         <div class="doc-title-block">
-                            <h2>السجل الأكاديمي</h2>
-                            <h3>علوم الحاسوب • نظام بولونيا الأكاديمي</h3>
+                            <h2>مسار الطالب</h2>
+                            <h3>علوم الحاسوب - جامعة بغداد</h3>
                         </div>
-                        <span class="page-badge-pill">المرحلة ${stageNum} من ${totalStages}</span>
-                    </div>
-
-                    <div class="doc-stats-summary-bar">
-                        <div class="doc-stat-item">
-                            <span class="stat-lbl">مجموع الوحدات المستوفاة</span>
-                            <span class="stat-val doc-earned-ects">${earnedEcts} / 240 وحدة</span>
-                        </div>
-                        <div class="doc-stat-item">
-                            <span class="stat-lbl">سنوات الدراسة الكلية</span>
-                            <span class="stat-val doc-total-years">${totalStudyYears} سنوات</span>
-                        </div>
+                        <span class="${badgePillClass}">المرحلة ${stageNum} من ${totalStages}</span>
                     </div>
                 </div>
 
@@ -1365,11 +1357,13 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
             statusIcon = '📅 مخطط';
         } else if (isForeign) {
             chipClass = 'chip-pass-foreign';
-            statusIcon = '✓ مستوفاة';
+            statusIcon = '';
         } else {
             chipClass = 'chip-pass';
-            statusIcon = '✓ مستوفاة';
+            statusIcon = '';
         }
+
+        const hasDetails = statusIcon || originLabel;
 
         rowsHTML += `
             <div class="transcript-module-row ${chipClass}">
@@ -1377,10 +1371,11 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
                     <span class="mod-row-title"><strong>${course.nameAr}</strong></span>
                     <span class="mod-row-ects">${course.ects} وحدة</span>
                 </div>
+                ${hasDetails ? `
                 <div class="mod-row-details">
-                    <span class="mod-row-status">${statusIcon}</span>
+                    ${statusIcon ? `<span class="mod-row-status">${statusIcon}</span>` : ''}
                     ${originLabel ? `<span class="mod-row-origin">${originLabel}</span>` : ''}
-                </div>
+                </div>` : ''}
             </div>
         `;
     });
@@ -1394,11 +1389,12 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
 
             <div class="sem-card-metrics">
                 <div class="sem-metric-item">
-                    <span class="sem-metric-label">الوحدات</span>
+                    <span class="sem-metric-label">الوحدات:</span>
                     <span class="sem-metric-value">${formatUnits(earnedEctsInSem)}</span>
                 </div>
+                <div class="sem-metric-divider"></div>
                 <div class="sem-metric-item">
-                    <span class="sem-metric-label">عدد المواد المسجلة</span>
+                    <span class="sem-metric-label">المواد المسجلة:</span>
                     <span class="sem-metric-value">${totalRegisteredCount} مواد</span>
                 </div>
             </div>
@@ -1658,7 +1654,7 @@ function renderQuickLookResults() {
                     <div class="ql-dep-item-card">
                         <div class="ql-dep-item-top">
                             <span class="ql-dep-item-title">${dep.nameAr}</span>
-                            <span class="ql-dep-ects-badge">${dep.ects} ECTS</span>
+                            <span class="ql-dep-ects-badge">${formatUnits(dep.ects)}</span>
                         </div>
                         <div class="ql-dep-item-bottom">
                             <span class="ql-dep-item-stage">${depStageName} • ${depCourse}</span>
@@ -1689,7 +1685,7 @@ function renderQuickLookResults() {
                     <div class="ql-dep-item-card">
                         <div class="ql-dep-item-top">
                             <span class="ql-dep-item-title">${dep.nameAr}</span>
-                            <span class="ql-dep-ects-badge">${dep.ects} ECTS</span>
+                            <span class="ql-dep-ects-badge">${formatUnits(dep.ects)}</span>
                         </div>
                         <div class="ql-dep-item-bottom">
                             <span class="ql-dep-item-stage">${depStageName} • ${depCourse}</span>
@@ -1726,7 +1722,7 @@ function renderQuickLookResults() {
                     <div class="ql-dep-item-card">
                         <div class="ql-dep-item-top">
                             <span class="ql-dep-item-title">${dep.nameAr}</span>
-                            <span class="ql-dep-ects-badge">${dep.ects} ECTS</span>
+                            <span class="ql-dep-ects-badge">${formatUnits(dep.ects)}</span>
                         </div>
                         <div class="ql-dep-item-bottom">
                             <span class="ql-dep-item-stage">${depStageName} • ${depCourse}</span>
@@ -1766,16 +1762,16 @@ function renderQuickLookResults() {
 
             return `
                 <div class="ql-chain-flow-item">
-                    <div class="ql-chain-flow-meta">
-                        <div class="ql-chain-meta-badges">
-                            <span class="ql-chain-stage-meta">${depStageName} • ${depCourse}</span>
-                            ${timingBadge}
-                        </div>
+                    <div class="ql-chain-flow-header">
+                        <span class="ql-chain-stage-meta">🎓 ${depStageName} • ${depCourse}</span>
+                        ${timingBadge}
                     </div>
-                    <div class="ql-chain-flow">
-                        <span class="ql-chain-node node-root">${subject.nameAr}</span>
-                        <span class="ql-chain-arrow">←</span>
-                        <span class="ql-chain-node node-direct">${dep.nameAr}</span>
+                    <div class="ql-chain-flow-body">
+                        <div class="ql-chain-flow">
+                            <span class="ql-chain-node node-root">${subject.nameAr}</span>
+                            <span class="ql-chain-arrow">←</span>
+                            <span class="ql-chain-node node-direct">${dep.nameAr}</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1787,6 +1783,10 @@ function renderQuickLookResults() {
         if (indirectPaths.length > 0) {
             indirectPathsHTML = indirectPaths.map((path, pIdx) => {
                 const firstDep = path[1];
+                const lastDep = path[path.length - 1];
+                const lastStage = Math.ceil(lastDep.sem / 2);
+                const lastStageName = getStageName(lastStage);
+                const lastCourse = getCourseName(lastDep.sem);
                 const isImmediateNext = (firstDep.sem === subject.sem + 1);
                 const timingBadge = isImmediateNext
                     ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري (الكورس القادم)</span>`
@@ -1805,12 +1805,13 @@ function renderQuickLookResults() {
 
                 return `
                     <div class="ql-chain-flow-item">
-                        <div class="ql-chain-flow-meta">
-                            <div class="ql-chain-meta-badges">
-                                ${timingBadge}
-                            </div>
+                        <div class="ql-chain-flow-header">
+                            <span class="ql-chain-stage-meta">⛓️ مسار يمتد إلى (${lastStageName} • ${lastCourse})</span>
+                            ${timingBadge}
                         </div>
-                        <div class="ql-chain-flow">${nodesHTML}</div>
+                        <div class="ql-chain-flow-body">
+                            <div class="ql-chain-flow">${nodesHTML}</div>
+                        </div>
                     </div>
                 `;
             }).join('');

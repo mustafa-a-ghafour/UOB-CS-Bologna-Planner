@@ -1597,7 +1597,7 @@ function renderQuickLookResults() {
         }).join('');
         prereqInfoHTML = `
             <div class="ql-target-prereqs-box">
-                <span class="ql-prereqs-label">🔑 تتطلب النجاح المسبق في:</span>
+                <span class="ql-prereqs-label">🔑 المادة التمهيدية المطلوبة:</span>
                 <div class="ql-prereqs-tags-list">
                     ${tagsHTML}
                 </div>
@@ -1606,8 +1606,8 @@ function renderQuickLookResults() {
     } else {
         prereqInfoHTML = `
             <div class="ql-target-prereqs-box">
-                <span class="ql-prereqs-label">🔑 المتطلب السابق:</span>
-                <span class="ql-prereq-none-text">لا توجد متطلبات سابقة (مادة تأسيسية أولية)</span>
+                <span class="ql-prereqs-label">🔑 المادة التمهيدية:</span>
+                <span class="ql-prereq-none-text">لا توجد مواد تمهيدية سابقة (مادة تأسيسية أولية)</span>
             </div>
         `;
     }

@@ -84,72 +84,170 @@
             </div>
         </div>
 
-        <!-- Top Standalone Centered Title Outside the Welcome Card Box -->
-        <div id="welcomeTopHeader" class="welcome-top-standalone-header">
-            <h1 class="welcome-standalone-title">🎓 مرحباً بك في المحاكي الأكاديمي</h1>
-        </div>
+        <!-- Top Standalone Centered Title (Hidden in favor of integrated modern hero) -->
+        <div id="welcomeTopHeader" class="welcome-top-standalone-header" style="display: none;"></div>
 
         <!-- Welcome Landing Page View -->
         <section id="welcomeScreen" class="welcome-screen-card">
+            <!-- Modern Ambient Background Glows -->
+            <div class="welcome-ambient-glow glow-primary"></div>
+            <div class="welcome-ambient-glow glow-secondary"></div>
+
+            <!-- Top Hero Banner with Glassmorphism & Modern Typography (Full Width) -->
             <div class="welcome-hero-banner">
                 <div class="welcome-hero-content">
-                    <h2 class="welcome-hero-title">دليلك التفاعلي لفهم مسار نظام بولونيا الأكاديمي</h2>
+                    <h1 class="welcome-hero-title">
+                        المنصة الذكية لمحاكاة مسار بولونيا
+                    </h1>
+                    <div class="welcome-badge-tag">
+                        <span class="pulse-dot"></span>
+                        <span class="badge-text-main">جامعة بغداد • قسم علوم الحاسوب</span>
+                    </div>
                     <p class="welcome-hero-desc">
-                        تصميم تفاعلي خاص لطلبة قسم علوم الحاسوب في جامعة بغداد لمحاكاة الانتقال بين الكورسات، حساب وحدات ECTS، وفهم قوانين الرسوب والسنوات الإضافية بدقة.
+                        بيئة تفاعلية حديثة تمكنك من محاكاة مسارك الدراسي بدقة، حساب الوحدات الدراسية والسنوات الإضافية، واستكشاف شجرة المواد التمهيدية والحرمان التكويني بمرونة وسلاسة.
                     </p>
                 </div>
             </div>
 
-            <!-- How System Works Grid -->
-            <div class="welcome-grid-container">
-                <h3 class="welcome-section-heading">📌 آلية عمل المحاكي ونظام بولونيا:</h3>
-                
-                <div class="welcome-features-grid">
-                    <div class="welcome-feature-card">
-                        <div class="feature-icon-wrapper">📘</div>
-                        <h4>نظام ECTS والوحدات</h4>
-                        <p>يتكون كل كورس دراسي من 30 وحدة ECTS بمجموع 240 وحدة للتخرج طيلة 4 سنوات دراسية (8 كورسات).</p>
+            <!-- Welcome Inner Content Body Area -->
+            <div class="welcome-body-content">
+                <!-- 1. Rules Section Header -->
+                <div class="welcome-rules-header">
+                    <div class="rules-indicator-badge">
+                        <span class="indicator-icon">💡</span>
+                        <span>أهم ما يجب معرفته عن مسار بولونيا:</span>
                     </div>
-
-                    <div class="welcome-feature-card">
-                        <div class="feature-icon-wrapper">🔄</div>
-                        <h4>محاكاة النجاح والرسوب</h4>
-                        <p>محاكاة فعلية دقيقة للخيارات المختلفة بين النجاح والرسوب في المواد، تعكس التأثير الفوري على المسار الدراسي والسنوات الإضافية.</p>
-                    </div>
-
-                    <div class="welcome-feature-card">
-                        <div class="feature-icon-wrapper">📜</div>
-                        <h4>السجل الوصفي الشامل</h4>
-                        <p>يقوم المحاكي بتوليد سجل أكاديمي وصفي منظم لكل مرحلة بعامودين للكورس الأول والثاني مع إمكانية استخراجه كصورة.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Transferred Notes & Rules Boxes -->
-            <div class="welcome-notes-wrapper">
-                <h3 class="welcome-section-heading">⚠️ الملاحظات والقواعد الهامة:</h3>
-
-                <!-- Blue Advisor Tip Box -->
-                <div class="advisor-tip-box">
-                    <span class="tip-icon">💡</span>
-                    <span>يعتبر الطالب ناجحاً تكوينيًا في كافة المواد افتراضياً، إلا إذا تم الضغط على زر "رسوب تكويني".</span>
+                    <div class="rules-indicator-line"></div>
                 </div>
 
-                <!-- Red Danger Dismissal Rule Box -->
-                <div class="danger-tip-box">
-                    <span class="tip-icon">🚨</span>
-                    <span>أي رسوب تكويني يضيف سنة دراسية إضافية، وتكرار الرسوب بمادة معادة يضيف سنة أخرى. الحد الأقصى 6 سنوات دراسية ثم يرقن القيد.</span>
-                </div>
-            </div>
+                <!-- Sleek 3-Card Rules Ribbon -->
+                <div class="welcome-rules-ribbon">
+                    <div class="rule-ribbon-card">
+                        <div class="rule-ribbon-icon">📊</div>
+                        <div class="rule-ribbon-body">
+                            <span class="rule-ribbon-title">سقف الـ 30 وحدة</span>
+                            <p class="rule-ribbon-text">سقف التسجيل 30 وحدة بكل كورس، وبمجموع 240 وحدة تخرج طيلة سنوات الدراسة.</p>
+                        </div>
+                    </div>
 
-            <!-- Welcome Screen Primary Action Buttons -->
-            <div class="welcome-action-bar">
-                <button id="btnStartSimulation" class="btn-start-hero">
-                    <span>🚀 أبدأ المحاكاة الآن</span>
-                </button>
-                <button id="btnOpenQuickLook" class="btn-quick-look-hero" type="button">
-                    <span>🔍 نظرة سريعة على ارتباطات المواد</span>
-                </button>
+                    <div class="rule-ribbon-card">
+                        <div class="rule-ribbon-icon">⚠️</div>
+                        <div class="rule-ribbon-body">
+                            <span class="rule-ribbon-title">الرسوب التكويني</span>
+                            <p class="rule-ribbon-text">أي رسوب تكويني يرحّل المادة لإعادتها ويضيف سنة دراسية خامسة تلقائياً حتى لو مادة واحدة.</p>
+                        </div>
+                    </div>
+
+                    <div class="rule-ribbon-card">
+                        <div class="rule-ribbon-icon">⏳</div>
+                        <div class="rule-ribbon-body">
+                            <span class="rule-ribbon-title">السقف الزمني (الترقين)</span>
+                            <p class="rule-ribbon-text">الحد الأقصى للدراسة 6 سنوات جامعية، وتجاوزها يسبب ترقين القيد مباشرة.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Choices Indicator Header -->
+                <div class="welcome-choices-header">
+                    <div class="choices-indicator-badge">
+                        <span class="indicator-icon">🎯</span>
+                        <span>إختر الاداة:</span>
+                    </div>
+                    <div class="choices-indicator-line"></div>
+                </div>
+
+                <!-- 3. Bento Action Showcase Grid (Simulator & Quick Look) -->
+                <div class="welcome-bento-grid">
+                    
+                    <!-- Bento Card 1: Simulation Mode -->
+                    <div class="bento-card bento-sim-card">
+                        <div class="bento-card-glow glow-sim"></div>
+                        <div class="bento-card-header">
+                            <div class="bento-icon-box icon-sim">
+                                <span>🎓</span>
+                            </div>
+                            <div class="bento-title-group">
+                                <span class="bento-sub-badge badge-sim">المحاكي التفاعلي</span>
+                                <h2 class="bento-card-title">محاكي المسار الدراسي</h2>
+                            </div>
+                        </div>
+
+                        <p class="bento-card-desc">
+                            محاكاة تفاعلية شاملة لمسيرتك الجامعية، تتيح لك تجربة قرارات التسجيل، واختبار أثر الرسوب التكويني على مسار التخرج واحتساب السنين والوحدات بدقة.
+                        </p>
+
+                        <div class="bento-chips-list">
+                            <div class="bento-chip">
+                                <span class="chip-icon">⚡</span>
+                                <span>حساب داينميكي ومباشر لعدد الوحدات</span>
+                            </div>
+                            <div class="bento-chip">
+                                <span class="chip-icon">🎯</span>
+                                <span>مرونة كاملة في اختيار وتسجيل المواد وتجربة القرارات</span>
+                            </div>
+                            <div class="bento-chip">
+                                <span class="chip-icon">📜</span>
+                                <span>تصدير مسار الطالب النهائي كصور</span>
+                            </div>
+                        </div>
+
+                        <div class="bento-action-wrapper">
+                            <button id="btnStartSimulation" class="btn-bento-action btn-bento-sim" type="button">
+                                <span class="btn-content">
+                                    <span class="btn-icon">🚀</span>
+                                    <span class="btn-text">بدء المحاكاة التفاعلية</span>
+                                </span>
+                                <span class="btn-arrow-icon">←</span>
+                                <span class="btn-shine-sweep"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bento Card 2: Quick Look Mode -->
+                    <div class="bento-card bento-ql-card">
+                        <div class="bento-card-glow glow-ql"></div>
+                        <div class="bento-card-header">
+                            <div class="bento-icon-box icon-ql">
+                                <span>🔍</span>
+                            </div>
+                            <div class="bento-title-group">
+                                <span class="bento-sub-badge badge-ql">استكشاف فوري للمواد</span>
+                                <h2 class="bento-card-title">النظرة السريعة وشجرة الارتباطات</h2>
+                            </div>
+                        </div>
+
+                        <p class="bento-card-desc">
+                            استكشف شبكة المواد التمهيدية مباشرة دون الحاجة لبدء محاكاة، وافحص تأثير الحرمان المباشر والتسلسلي لأي مادة في الخطة.
+                        </p>
+
+                        <div class="bento-chips-list">
+                            <div class="bento-chip">
+                                <span class="chip-icon">🔑</span>
+                                <span>كشف المواد التمهيدية لكل مادة</span>
+                            </div>
+                            <div class="bento-chip">
+                                <span class="chip-icon">🚨</span>
+                                <span>معرفة المواد المرتبطة بالكورس القادم والكورسات اللاحقة</span>
+                            </div>
+                            <div class="bento-chip">
+                                <span class="chip-icon">⛓️</span>
+                                <span>تتبع سلاسل الاعتماد الأكاديمي التراكمي</span>
+                            </div>
+                        </div>
+
+                        <div class="bento-action-wrapper">
+                            <button id="btnOpenQuickLook" class="btn-bento-action btn-bento-ql" type="button">
+                                <span class="btn-content">
+                                    <span class="btn-icon">🔍</span>
+                                    <span class="btn-text">نظرة سريعة</span>
+                                </span>
+                                <span class="btn-arrow-icon">←</span>
+                                <span class="btn-shine-sweep"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </section>
 
@@ -163,7 +261,7 @@
                     </div>
                     <h2 class="quick-look-title">🔍 نظرة سريعة على ارتباطات المواد</h2>
                     <p class="quick-look-subtitle">
-                        اختر المرحلة والكورس والمادة لاستكشاف المتطلبات وتأثير الرسوب التكويني والحرمان المباشر وغير المباشر في المراحل القادمة.
+                        اختر المرحلة والكورس والمادة لاستكشاف المواد التمهيدية وتأثير الرسوب التكويني ومعرفة الارتباطات بالكورسات اللاحقة.
                     </p>
                 </div>
                 <button id="btnBackFromQuickLook" class="btn-back-home" type="button">
@@ -375,7 +473,7 @@
 
     <!-- Dark Premium Footer Positioned at Absolute Bottom -->
     <footer class="system-footer">
-        <p>إعداد مصطفى أحمد غفور</p>
+        <p>إعداد: مصطفى أحمد غفور</p>
     </footer>
 
     <!-- Custom In-App Interactive Modal Dialog Container -->

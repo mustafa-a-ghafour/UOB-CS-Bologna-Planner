@@ -147,6 +147,22 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .rules-indicator-badge,
+    .choices-indicator-badge,
+    .deprivation-indicator-badge {
+        font-size: 0.82rem;
+        font-weight: 800;
+        padding: 0.4rem 0.85rem;
+        white-space: normal;
+        max-width: 100%;
+        line-height: 1.45;
+        border-radius: 18px;
+        box-sizing: border-box;
+        word-break: break-word;
     }
 
     .rules-indicator-line,
@@ -160,6 +176,38 @@
     .quick-look-screen-card {
         padding: 1rem 0.75rem;
         gap: 1rem;
+    }
+
+    .ql-target-header {
+        position: relative;
+        width: 100%;
+    }
+
+    .ql-target-title-block {
+        flex: 1;
+        min-width: 0;
+        padding-left: 2.75rem;
+    }
+
+    .ql-target-action-block {
+        position: absolute;
+        top: 0.85rem;
+        left: 0.85rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        z-index: 10;
+    }
+
+    .btn-share-ql-icon {
+        width: 34px;
+        height: 34px;
+        font-size: 0.98rem;
+    }
+
+    .share-copied-toast {
+        font-size: 0.72rem;
+        padding: 0.2rem 0.5rem;
     }
 
     .quick-look-header-bar {

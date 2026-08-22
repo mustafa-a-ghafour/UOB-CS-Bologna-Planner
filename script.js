@@ -1461,29 +1461,19 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
 // --------------------------------------------------------------------------
 // 4. Welcome Screen & Main Workspace Controls
 // --------------------------------------------------------------------------
-// Helper to generate clean SPA URLs (/simulation, /quick-look)
+// Helper to generate clean, server-safe SPA URLs without 404 Cannot GET errors
 function getAppPath(screen, subjectCode = '') {
-    const isHttp = window.location.protocol.startsWith('http');
-    if (isHttp) {
-        let base = window.location.pathname.replace(/\/index\.html$/, '').replace(/\/quick-look$/, '').replace(/\/simulation$/, '');
-        if (!base.endsWith('/')) base += '/';
-
-        if (screen === 'workspace' || screen === 'simulation') {
-            return base + 'simulation';
-        }
-        if (screen === 'quick-look') {
-            return subjectCode ? `${base}quick-look?subject=${subjectCode}` : `${base}quick-look`;
-        }
-        return base;
-    } else {
-        if (screen === 'workspace' || screen === 'simulation') {
-            return '?screen=simulation';
-        }
-        if (screen === 'quick-look') {
-            return subjectCode ? `?screen=quick-look&subject=${subjectCode}` : `?screen=quick-look`;
-        }
-        return window.location.pathname;
+    if (screen === 'workspace' || screen === 'simulation') {
+        return '?simulation';
     }
+    if (screen === 'quick-look') {
+        return subjectCode ? `?quick-look&subject=${subjectCode}` : '?quick-look';
+    }
+    const isHttp = window.location.protocol.startsWith('http');
+    if (isHttp && window.location.pathname.endsWith('/index.html')) {
+        return window.location.pathname.replace(/\/index\.html$/, '/') || './';
+    }
+    return './';
 }
 
 function startSimulation(pushState = true) {
@@ -2021,14 +2011,16 @@ function renderQuickLookResults() {
                     <h3 class="ql-target-name-ar">${subject.nameAr}</h3>
                     <span class="ql-target-name-en">${subject.nameEn}</span>
                 </div>
-                <div class="ql-target-meta-badges">
-                    <span class="ql-pill-ects">${formatUnits(subject.ects)}</span>
-                    <span class="ql-pill-stage">${fullOriginName}</span>
-                    <button type="button" class="btn-share-ql-subject" id="btnShareQlSubject" title="مشاركة رابط مباشر لهذه المادة">
-                        <span class="share-icon">🔗</span>
-                        <span>مشاركة المادة</span>
+                <div class="ql-target-action-block">
+                    <button type="button" class="btn-share-ql-icon" id="btnShareQlSubject" title="نسخ رابط المادة المباشر">
+                        <span>🔗</span>
                     </button>
+                    <span class="share-copied-toast" id="shareCopiedToast" style="display: none;">✓ تم نسخ الرابط</span>
                 </div>
+            </div>
+            <div class="ql-target-meta-badges">
+                <span class="ql-pill-ects">${formatUnits(subject.ects)}</span>
+                <span class="ql-pill-stage">${fullOriginName}</span>
             </div>
             ${prereqInfoHTML}
         </div>
@@ -2039,12 +2031,13 @@ function renderQuickLookResults() {
     const btnShare = document.getElementById('btnShareQlSubject');
     if (btnShare) {
         btnShare.addEventListener('click', async () => {
+            const originBase = `${window.location.origin}${window.location.pathname.replace(/\/index\.html$/, '')}`;
+            const cleanBase = originBase.endsWith('/') ? originBase.slice(0, -1) : originBase;
             const shareUrl = window.location.protocol.startsWith('http')
-                ? `${window.location.origin}${getAppPath('quick-look', subject.code)}`
-                : `${window.location.href.split('?')[0].split('#')[0]}?screen=quick-look&subject=${subject.code}`;
+                ? `${cleanBase}/?quick-look&subject=${subject.code}`
+                : `${window.location.href.split('?')[0].split('#')[0]}?quick-look&subject=${subject.code}`;
             try {
                 await navigator.clipboard.writeText(shareUrl);
-                await showAppAlert(`تم نسخ رابط المادة المباشر (${subject.nameAr}) بنجاح!<br><br>رابط المشاركة المباشر:<br><code class="share-url-code">${shareUrl}</code>`, "رابط مشاركة مباشر 🔗", "📋");
             } catch (err) {
                 const tempInput = document.createElement('input');
                 tempInput.value = shareUrl;
@@ -2052,7 +2045,15 @@ function renderQuickLookResults() {
                 tempInput.select();
                 document.execCommand('copy');
                 document.body.removeChild(tempInput);
-                await showAppAlert(`تم نسخ رابط المادة المباشر (${subject.nameAr}) بنجاح!<br><br>رابط المشاركة المباشر:<br><code class="share-url-code">${shareUrl}</code>`, "رابط مشاركة مباشر 🔗", "📋");
+            }
+
+            const toast = document.getElementById('shareCopiedToast');
+            if (toast) {
+                toast.style.display = 'inline-flex';
+                if (window.shareToastTimer) clearTimeout(window.shareToastTimer);
+                window.shareToastTimer = setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 2000);
             }
         });
     }

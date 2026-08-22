@@ -678,19 +678,56 @@ function renderRegisteredGrid() {
 
         let failImpactHTML = '';
         if (isFail) {
-            const deps = getDownstreamDependencies(item.code);
-            const immediateBlocked = deps.filter(dep => dep.sem <= course.sem + 1);
-            const futureDeps = deps.filter(dep => dep.sem > course.sem + 1);
+            const directDependents = curriculumData.filter(c => c.prereq.includes(item.code));
+            const allDownstream = getDownstreamDependencies(item.code);
+            const indirectDependents = allDownstream.filter(c => !directDependents.some(d => d.code === c.code));
 
-            if (immediateBlocked.length > 0) {
-                const listHTML = immediateBlocked.map(dep => {
-                    const stageName = getStageName(Math.ceil(dep.sem / 2));
-                    return `<li><strong>${dep.nameAr}</strong> - ${stageName}</li>`;
-                }).join('');
+            const immediateNextSemDirect = directDependents.filter(dep => dep.sem <= course.sem + 1);
+            const laterSemDirect = directDependents.filter(dep => dep.sem > course.sem + 1);
+
+            if (directDependents.length > 0) {
+                let directSubgroupsHTML = '';
+
+                if (immediateNextSemDirect.length > 0) {
+                    const listHTML = immediateNextSemDirect.map(dep => {
+                        const stageName = getStageName(Math.ceil(dep.sem / 2));
+                        const courseName = getCourseName(dep.sem);
+                        return `<li><strong>${dep.nameAr}</strong> - ${stageName} • ${courseName} <span class="sim-dep-badge badge-direct-next">⚡ حرمان مباشر من الكورس القادم</span></li>`;
+                    }).join('');
+
+                    directSubgroupsHTML += `
+                        <div class="sim-direct-subgroup">
+                            <div class="sim-subgroup-title">⚡ حرمان مباشر من الكورس القادم (${immediateNextSemDirect.length} مواد):</div>
+                            <ul class="fail-impact-list">
+                                ${listHTML}
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                if (laterSemDirect.length > 0) {
+                    const listHTML = laterSemDirect.map(dep => {
+                        const stageName = getStageName(Math.ceil(dep.sem / 2));
+                        const courseName = getCourseName(dep.sem);
+                        return `<li><strong>${dep.nameAr}</strong> - ${stageName} • ${courseName} <span class="sim-dep-badge badge-direct-later">🔒 حرمان مباشر من كورس لاحق</span></li>`;
+                    }).join('');
+
+                    directSubgroupsHTML += `
+                        <div class="sim-direct-subgroup" style="${immediateNextSemDirect.length > 0 ? 'margin-top:0.5rem;' : ''}">
+                            <div class="sim-subgroup-title">📅 حرمان مباشر من كورس لاحق (${laterSemDirect.length} مواد):</div>
+                            <div class="sim-subgroup-note-yellow">
+                                💡 <strong>ملاحظة هامة:</strong> إذا نجح الطالب بإعادة مادة (${course.nameAr}) قبل حلول هذه الفصول الدراسية، سيتمكن من تسجيل هذه المواد وخوضها بصورة طبيعية دون أي تأخير. إلا إذا كانت المادة في نفس الكورس الذي سيتم إعادة المادة فيه، هنا سيتم تأجيل تسجيلها إلى العام اللاحق.
+                            </div>
+                            <ul class="fail-impact-list">
+                                ${listHTML}
+                            </ul>
+                        </div>
+                    `;
+                }
 
                 let indirectBtnHTML = '';
-                if (futureDeps.length > 0) {
-                    const indirectListHTML = futureDeps.map(dep => {
+                if (indirectDependents.length > 0) {
+                    const indirectListHTML = indirectDependents.map(dep => {
                         const fullSemInfo = getFullStageAndCourseName(dep.sem);
                         return `<li><strong>${dep.nameAr}</strong> - ${fullSemInfo} <span class="indirect-tag">(حرمان غير مباشر)</span></li>`;
                     }).join('');
@@ -699,52 +736,49 @@ function renderRegisteredGrid() {
                         <div class="indirect-toggle-wrapper">
                             <button class="btn-toggle-indirect" type="button">
                                 <span class="info-circle-icon">ⓘ</span>
-                                <span>اطّلع على المواد التي تعتمد على هذه المادة أيضاً</span>
+                                <span>اطّلع على المواد التي تعتمد على هذه المادة بشكل غير مباشر (تسلسلي) (${indirectDependents.length} مواد)</span>
                             </button>
                             <div class="indirect-collapsible-box" style="display: none;">
-                                <div class="yellow-box-title">💡 المواد التي تعتمد على هذه المادة أيضاً:</div>
+                                <div class="yellow-box-title">💡 المواد التي تعتمد على هذه المادة بشكل غير مباشر (تسلسلي):</div>
                                 <ul class="yellow-box-list">
                                     ${indirectListHTML}
                                 </ul>
                                 <div class="yellow-box-footer-note">
-                                    لكن إذا تم إنجاز هذه المادة، يمكن خوض هذه المواد بشكل طبيعي في أعوامها وفصولها المحددة.
+                                    لكن إذا تم إنجاز هذه المادة، والمواد الأخرى المرتبطة تسلسليًا بها، يمكن خوض هذه المواد بشكل طبيعي في أعوامها وفصولها المحددة.
                                 </div>
                             </div>
                         </div>
                     `;
                 }
 
-
                 failImpactHTML = `
                     <div class="fail-impact-banner">
                         <div class="fail-impact-title">🚨 سيؤدي الرسوب بمادة (${course.nameAr}) إلى حرمان مباشر من التسجيل على:</div>
-                        <ul class="fail-impact-list">
-                            ${listHTML}
-                        </ul>
+                        ${directSubgroupsHTML}
                         ${indirectBtnHTML}
                     </div>
                 `;
-            } else if (futureDeps.length > 0) {
-                const listHTML = futureDeps.map(dep => {
+            } else if (indirectDependents.length > 0) {
+                const listHTML = indirectDependents.map(dep => {
                     const fullSemInfo = getFullStageAndCourseName(dep.sem);
                     return `<li><strong>${dep.nameAr}</strong> - ${fullSemInfo} <span class="indirect-tag">(حرمان غير مباشر)</span></li>`;
                 }).join('');
 
                 failImpactHTML = `
                     <div class="yellow-pass-box">
-                        <div class="yellow-box-title">⚠️ قد تؤدي عدم إنجاز هذه المادة إلى حرمان غير مباشر من:</div>
+                        <div class="yellow-box-title">⚠️ قد تؤدي عدم إنجاز هذه المادة إلى حرمان غير مباشر (تسلسلي) من:</div>
                         <ul class="yellow-box-list">
                             ${listHTML}
                         </ul>
                         <div class="yellow-box-footer-note">
-                            لكن إذا تم إنجاز هذه المادة، يمكن خوض هذه المواد بشكل طبيعي في أعوامها وفصولها المحددة.
+                            لكن إذا تم إنجاز هذه المادة، والمواد الأخرى المرتبطة تسلسليًا بها، يمكن خوض هذه المواد بشكل طبيعي في أعوامها وفصولها المحددة.
                         </div>
                     </div>
                 `;
             } else {
                 failImpactHTML = `
                     <div class="fail-impact-banner muted">
-                        ℹ️ الرسوب بمادة (${course.nameAr}) لا يسبب حرمان مباشر من تسجيل أي مادة في الكورس القادم، لكن تؤدي الى سنة خامسة بسبب حد عدد الوحدات لكل كورس
+                        ℹ️ الرسوب بمادة (${course.nameAr}) لا يسبب حرمان مباشر أو غير مباشر من تسجيل أي مادة في الكورسات القادمة، لكن تؤدي الى سنة خامسة بسبب حد عدد الوحدات لكل كورس
                     </div>
                 `;
             }
@@ -874,16 +908,34 @@ function renderRegistrationPanels(panelsData, activeSem) {
             const originText = getFullStageAndCourseName(mod.origSem);
             const unitsFormatted = formatUnits(mod.ects);
 
-            const deps = getDownstreamDependencies(mod.code);
+            const directDependents = curriculumData.filter(c => c.prereq.includes(mod.code));
+            const allDownstream = getDownstreamDependencies(mod.code);
+            const indirectDependents = allDownstream.filter(c => !directDependents.some(d => d.code === c.code));
+
+            const immediateNextSemDirect = directDependents.filter(dep => dep.sem <= mod.origSem + 1);
+            const laterSemDirect = directDependents.filter(dep => dep.sem > mod.origSem + 1);
+
             let delayWarningHTML = '';
 
-            if (deps.length > 0) {
-                const depItemsHTML = deps.map(dep => {
-                    const isImmediate = dep.sem <= mod.origSem + 1;
-                    const tagText = isImmediate ? 'حرمان مباشر' : 'حرمان غير مباشر';
-                    const tagClass = isImmediate ? 'tag-direct' : 'tag-indirect';
-                    return `<li><strong>${dep.nameAr}</strong> - <span class="${tagClass}">(${tagText})</span></li>`;
-                }).join('');
+            if (allDownstream.length > 0) {
+                const depItemsHTML = [];
+
+                immediateNextSemDirect.forEach(dep => {
+                    const stageName = getStageName(Math.ceil(dep.sem / 2));
+                    const courseName = getCourseName(dep.sem);
+                    depItemsHTML.push(`<li><strong>${dep.nameAr}</strong> (${stageName} • ${courseName}) - <span class="tag-direct-next">⚡ حرمان مباشر من الكورس القادم</span></li>`);
+                });
+
+                laterSemDirect.forEach(dep => {
+                    const stageName = getStageName(Math.ceil(dep.sem / 2));
+                    const courseName = getCourseName(dep.sem);
+                    depItemsHTML.push(`<li><strong>${dep.nameAr}</strong> (${stageName} • ${courseName}) - <span class="tag-direct-later">🔒 حرمان مباشر من كورس لاحق</span></li>`);
+                });
+
+                indirectDependents.forEach(dep => {
+                    const fullSemInfo = getFullStageAndCourseName(dep.sem);
+                    depItemsHTML.push(`<li><strong>${dep.nameAr}</strong> (${fullSemInfo}) - <span class="tag-indirect">⛓️ حرمان غير مباشر</span></li>`);
+                });
 
                 const currentExtraYears = simulationState.maxExtraYearsIncurred || 0;
                 const impact = analyzeDelayImpact(mod.code, activeSem);
@@ -899,13 +951,11 @@ function renderRegistrationPanels(panelsData, activeSem) {
                     <div class="available-delay-warning">
                         <div class="delay-warning-title">🚨 عدم إضافتك هذه المادة سيؤدي إلى حرمانك من التسجيل على المواد:</div>
                         <ul class="delay-warning-list">
-                            ${depItemsHTML}
+                            ${depItemsHTML.join('')}
                         </ul>
                         ${footerWarningHTML}
                     </div>
                 `;
-
-
             }
 
             const div = document.createElement('div');
@@ -1597,7 +1647,7 @@ function renderQuickLookResults() {
         }).join('');
         prereqInfoHTML = `
             <div class="ql-target-prereqs-box">
-                <span class="ql-prereqs-label">🔑 المادة التمهيدية المطلوبة:</span>
+                <span class="ql-prereqs-label">🔑 المادة التمهيدية/ يتطلب النجاح التكويني بهذه المواد لتسجيل هذه المادة:</span>
                 <div class="ql-prereqs-tags-list">
                     ${tagsHTML}
                 </div>
@@ -1702,7 +1752,7 @@ function renderQuickLookResults() {
                     </div>
                     <div class="ql-subgroup-note-yellow">
                         <span class="subgroup-note-icon">💡</span>
-                        <span><strong>ملاحظة هامة:</strong> إذا اجتاز الطالب مادة (${subject.nameAr}) ونجح فيها عند إعادتها قبل حلول هذه الفصول الدراسية، فسيتمكن من تسجيل هذه المواد وخوضها في كورساتها المحددة بصورة طبيعية دون أي تأخير.</span>
+                        <span><strong>ملاحظة هامة:</strong> إذا نجح الطالب بإعادة مادة (${subject.nameAr}) قبل حلول هذه الفصول الدراسية، سيتمكن من تسجيل هذه المواد وخوضها بصورة طبيعية دون أي تأخير. إلا إذا كانت المادة في نفس الكورس الذي سيتم إعادة المادة فيه، هنا سيتم تأجيل تسجيلها إلى العام اللاحق.</span>
                     </div>
                     <div class="ql-deps-list">
                         ${listHTML}

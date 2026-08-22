@@ -1461,6 +1461,31 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
 // --------------------------------------------------------------------------
 // 4. Welcome Screen & Main Workspace Controls
 // --------------------------------------------------------------------------
+// Helper to generate clean SPA URLs (/simulation, /quick-look)
+function getAppPath(screen, subjectCode = '') {
+    const isHttp = window.location.protocol.startsWith('http');
+    if (isHttp) {
+        let base = window.location.pathname.replace(/\/index\.html$/, '').replace(/\/quick-look$/, '').replace(/\/simulation$/, '');
+        if (!base.endsWith('/')) base += '/';
+
+        if (screen === 'workspace' || screen === 'simulation') {
+            return base + 'simulation';
+        }
+        if (screen === 'quick-look') {
+            return subjectCode ? `${base}quick-look?subject=${subjectCode}` : `${base}quick-look`;
+        }
+        return base;
+    } else {
+        if (screen === 'workspace' || screen === 'simulation') {
+            return '?screen=simulation';
+        }
+        if (screen === 'quick-look') {
+            return subjectCode ? `?screen=quick-look&subject=${subjectCode}` : `?screen=quick-look`;
+        }
+        return window.location.pathname;
+    }
+}
+
 function startSimulation(pushState = true) {
     const shouldPush = typeof pushState === 'boolean' ? pushState : true;
     const welcome = document.getElementById('welcomeScreen');
@@ -1483,7 +1508,7 @@ function startSimulation(pushState = true) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
         if (shouldPush) {
-            history.pushState({ screen: 'workspace' }, '', '#simulation');
+            history.pushState({ screen: 'workspace' }, '', getAppPath('simulation'));
         }
     }
 }
@@ -1517,7 +1542,7 @@ function showWelcomeScreen(pushState = true) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
         if (shouldPush) {
-            history.pushState({ screen: 'welcome' }, '', '#');
+            history.pushState({ screen: 'welcome' }, '', getAppPath('welcome'));
         }
     }
 }
@@ -1525,6 +1550,28 @@ function showWelcomeScreen(pushState = true) {
 // --------------------------------------------------------------------------
 // 4.5 Quick Look (نظرة سريعة على ارتباطات المواد) Feature Engine
 // --------------------------------------------------------------------------
+function loadQuickLookSubjectByCode(code) {
+    const subject = curriculumMap[code];
+    if (!subject) return;
+
+    const stageSelect = document.getElementById('qlStageSelect');
+    const courseSelect = document.getElementById('qlCourseSelect');
+    const subjectSelect = document.getElementById('qlSubjectSelect');
+
+    if (stageSelect && courseSelect && subjectSelect) {
+        const stageNum = Math.ceil(subject.sem / 2);
+        const courseNum = (subject.sem % 2 !== 0) ? 1 : 2;
+
+        stageSelect.value = stageNum.toString();
+        courseSelect.value = courseNum.toString();
+
+        populateQuickLookSubjects();
+
+        subjectSelect.value = subject.code;
+        renderQuickLookResults();
+    }
+}
+
 function openQuickLookScreen(pushState = true) {
     const shouldPush = typeof pushState === 'boolean' ? pushState : true;
     const welcome = document.getElementById('welcomeScreen');
@@ -1535,13 +1582,6 @@ function openQuickLookScreen(pushState = true) {
     const topSlimStrip = document.getElementById('topSlimStrip');
 
     if (welcome && qlScreen) {
-        const stageSelect = document.getElementById('qlStageSelect');
-        const courseSelect = document.getElementById('qlCourseSelect');
-        const subjectSelect = document.getElementById('qlSubjectSelect');
-        if (stageSelect) stageSelect.value = '';
-        if (courseSelect) courseSelect.value = '';
-        if (subjectSelect) subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
-
         welcome.style.display = 'none';
         if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
         if (mainWS) mainWS.style.display = 'none';
@@ -1551,11 +1591,26 @@ function openQuickLookScreen(pushState = true) {
         qlScreen.style.display = 'flex';
         qlScreen.style.animation = 'fadeIn 0.35s ease-out';
 
-        populateQuickLookSubjects();
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
+        const urlStr = window.location.href;
+        const match = urlStr.match(/[?&#]subject=([A-Za-z0-9]+)/) || urlStr.match(/[?&#]code=([A-Za-z0-9]+)/);
+        if (match && match[1] && curriculumMap[match[1]]) {
+            loadQuickLookSubjectByCode(match[1]);
+        } else {
+            const stageSelect = document.getElementById('qlStageSelect');
+            const courseSelect = document.getElementById('qlCourseSelect');
+            const subjectSelect = document.getElementById('qlSubjectSelect');
+            if (stageSelect) stageSelect.value = '';
+            if (courseSelect) courseSelect.value = '';
+            if (subjectSelect) subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+            populateQuickLookSubjects();
+        }
+
         if (shouldPush) {
-            history.pushState({ screen: 'quick-look' }, '', '#quick-look');
+            const subMatch = urlStr.match(/[?&#]subject=([A-Za-z0-9]+)/) || urlStr.match(/[?&#]code=([A-Za-z0-9]+)/);
+            const subCode = (subMatch && subMatch[1]) ? subMatch[1] : '';
+            history.pushState({ screen: 'quick-look' }, '', getAppPath('quick-look', subCode));
         }
     }
 }
@@ -1955,6 +2010,10 @@ function renderQuickLookResults() {
         `;
     }
 
+    try {
+        history.replaceState({ screen: 'quick-look', subject: selectedCode }, '', getAppPath('quick-look', selectedCode));
+    } catch (e) {}
+
     container.innerHTML = `
         <div class="ql-target-card">
             <div class="ql-target-header">
@@ -1965,6 +2024,10 @@ function renderQuickLookResults() {
                 <div class="ql-target-meta-badges">
                     <span class="ql-pill-ects">${formatUnits(subject.ects)}</span>
                     <span class="ql-pill-stage">${fullOriginName}</span>
+                    <button type="button" class="btn-share-ql-subject" id="btnShareQlSubject" title="مشاركة رابط مباشر لهذه المادة">
+                        <span class="share-icon">🔗</span>
+                        <span>مشاركة المادة</span>
+                    </button>
                 </div>
             </div>
             ${prereqInfoHTML}
@@ -1972,6 +2035,27 @@ function renderQuickLookResults() {
 
         ${impactContentHTML}
     `;
+
+    const btnShare = document.getElementById('btnShareQlSubject');
+    if (btnShare) {
+        btnShare.addEventListener('click', async () => {
+            const shareUrl = window.location.protocol.startsWith('http')
+                ? `${window.location.origin}${getAppPath('quick-look', subject.code)}`
+                : `${window.location.href.split('?')[0].split('#')[0]}?screen=quick-look&subject=${subject.code}`;
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                await showAppAlert(`تم نسخ رابط المادة المباشر (${subject.nameAr}) بنجاح!<br><br>رابط المشاركة المباشر:<br><code class="share-url-code">${shareUrl}</code>`, "رابط مشاركة مباشر 🔗", "📋");
+            } catch (err) {
+                const tempInput = document.createElement('input');
+                tempInput.value = shareUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                await showAppAlert(`تم نسخ رابط المادة المباشر (${subject.nameAr}) بنجاح!<br><br>رابط المشاركة المباشر:<br><code class="share-url-code">${shareUrl}</code>`, "رابط مشاركة مباشر 🔗", "📋");
+            }
+        });
+    }
 
     const btnToggleChain = document.getElementById('btnToggleQlChain');
     if (btnToggleChain) {
@@ -2082,18 +2166,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Browser Back / Forward Button Navigation Support
     function handleHistoryNavigation(e) {
         const stateScreen = e?.state?.screen;
-        const hash = window.location.hash;
+        const urlStr = window.location.href;
 
-        if (stateScreen === 'quick-look' || hash === '#quick-look') {
+        const match = urlStr.match(/[?&#]subject=([A-Za-z0-9]+)/) || urlStr.match(/[?&#]code=([A-Za-z0-9]+)/);
+
+        if (match && match[1] && curriculumMap[match[1]]) {
             openQuickLookScreen(false);
-        } else if (stateScreen === 'workspace' || hash === '#simulation') {
+            loadQuickLookSubjectByCode(match[1]);
+        } else if (stateScreen === 'quick-look' || urlStr.includes('quick-look') || urlStr.includes('screen=quick-look')) {
+            openQuickLookScreen(false);
+        } else if (stateScreen === 'workspace' || urlStr.includes('simulation') || urlStr.includes('screen=simulation')) {
             startSimulation(false);
         } else {
             showWelcomeScreen(false);
         }
     }
 
-    history.replaceState({ screen: 'welcome' }, '', window.location.pathname);
+    try {
+        const initialUrl = window.location.href;
+        const match = initialUrl.match(/[?&#]subject=([A-Za-z0-9]+)/) || initialUrl.match(/[?&#]code=([A-Za-z0-9]+)/);
+
+        if (match || initialUrl.includes('quick-look') || initialUrl.includes('screen=quick-look') || initialUrl.includes('simulation') || initialUrl.includes('screen=simulation')) {
+            handleHistoryNavigation();
+        } else {
+            history.replaceState({ screen: 'welcome' }, '', getAppPath('welcome'));
+        }
+    } catch (err) {
+        // Fallback
+    }
     window.addEventListener('popstate', handleHistoryNavigation);
     window.addEventListener('hashchange', handleHistoryNavigation);
 

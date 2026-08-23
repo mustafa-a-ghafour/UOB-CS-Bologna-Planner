@@ -205,9 +205,13 @@
         font-size: 0.98rem;
     }
 
-    .share-copied-toast {
-        font-size: 0.72rem;
-        padding: 0.2rem 0.5rem;
+    .global-app-toast {
+        bottom: 1.25rem;
+        width: calc(100% - 2rem);
+        max-width: 320px;
+        justify-content: center;
+        font-size: 0.85rem;
+        padding: 0.6rem 1rem;
     }
 
     .quick-look-header-bar {
@@ -277,10 +281,13 @@
     }
 
     .ql-subgroup-note-yellow {
-        padding: 0.5rem 0.65rem;
+        padding: 0.6rem 0.75rem;
         font-size: 0.76rem;
         line-height: 1.45;
-        gap: 0.35rem;
+        gap: 0.4rem;
+        text-align: right;
+        justify-content: flex-start;
+        align-items: flex-start;
     }
 
     .ql-deps-list {
@@ -288,6 +295,17 @@
         flex-direction: column;
         gap: 0.5rem;
         width: 100%;
+    }
+
+    .ql-dep-tags-group {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 0.3rem;
+    }
+
+    .ql-dep-condition-note {
+        font-size: 0.72rem;
     }
 
     .ql-target-card {
@@ -594,5 +612,149 @@
         justify-content: center;
         padding: 0.85rem 1.2rem;
         font-size: 0.88rem;
+    }
+
+    /* Simulator Chains Modal Mobile View */
+    .sim-chains-overlay {
+        padding: 0.5rem;
+    }
+
+    .sim-chains-card {
+        max-height: 92vh;
+        border-radius: 14px;
+    }
+
+    .sim-chains-header {
+        padding: 0.9rem 1rem;
+    }
+
+    .sim-chains-title {
+        font-size: 0.95rem;
+    }
+
+    .sim-chains-subtitle {
+        font-size: 0.72rem;
+    }
+
+    .sim-chains-body {
+        padding: 0.85rem;
+        gap: 0.85rem;
+    }
+
+    .sim-preview-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .sim-preview-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    /* Mobile-specific Card, Stage & Yellow Box Optimization */
+    .available-delay-warning,
+    .fail-impact-banner {
+        padding: 0.7rem 0.55rem;
+    }
+
+    .sim-direct-subgroup {
+        padding: 0.45rem 0.5rem;
+    }
+
+    .fail-impact-list {
+        padding-right: 0.15rem;
+    }
+
+    .sim-dep-stage {
+        font-size: 0.71rem;
+        white-space: nowrap;
+    }
+
+    .sim-subgroup-note-yellow {
+        padding: 0.7rem 0.8rem;
+        margin-top: 0.4rem;
+        margin-bottom: 0.55rem;
+        border-radius: 10px;
+        gap: 0.45rem;
+    }
+
+    .subgroup-note-title-row {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .sim-subgroup-note-yellow .subgroup-note-icon {
+        font-size: 1.15rem;
+    }
+
+    .subgroup-note-title {
+        font-size: 0.82rem;
+    }
+
+    .subgroup-note-legend {
+        gap: 0.45rem;
+    }
+
+    .legend-item {
+        font-size: 0.76rem;
+        line-height: 1.45;
+    }
+
+    .legend-item .tag-yes,
+    .legend-item .tag-no {
+        padding: 0.1rem 0.45rem;
+        font-size: 0.72rem;
+        margin-left: 0.35rem;
+    }
+
+    .btn-open-sim-chains {
+        font-size: 0.8rem;
+        padding: 0.6rem 0.85rem;
+        white-space: nowrap;
+    }
+
+    .ql-chain-note-footer {
+        padding: 0.5rem 0.65rem;
+        gap: 0.2rem;
+    }
+
+    .ql-chain-note-title {
+        font-size: 0.78rem;
+    }
+
+    .ql-chain-note-text {
+        font-size: 0.74rem;
+        line-height: 1.4;
+    }
+
+    .ql-dep-item-bottom {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+    }
+
+    .ql-dep-item-stage {
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+
+    .ql-dep-tags-group {
+        gap: 0.3rem;
+    }
+
+    .ql-indirect-box .ql-dep-item-bottom {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.4rem;
+    }
+
+    .ql-indirect-box .tag-indirect-block {
+        font-size: 0.69rem;
+        padding: 0.15rem 0.45rem;
+        margin-right: auto;
     }
 }

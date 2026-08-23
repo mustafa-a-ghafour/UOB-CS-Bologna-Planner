@@ -113,6 +113,10 @@ function getDownstreamDependencies(courseCode) {
     return Array.from(dependentCodes).map(code => curriculumMap[code]);
 }
 
+function getDirectDependents(courseCode) {
+    return curriculumData.filter(c => Array.isArray(c.prereq) && c.prereq.includes(courseCode));
+}
+
 /**
  * Mathematically analyzes whether delaying/skipping an available candidate module in activeSem
  * will force the student into a 6th academic year (Semester 11+ / Year 6)
@@ -692,7 +696,15 @@ function renderRegisteredGrid() {
                     const listHTML = immediateNextSemDirect.map(dep => {
                         const stageName = getStageName(Math.ceil(dep.sem / 2));
                         const courseName = getCourseName(dep.sem);
-                        return `<li><strong>${dep.nameAr}</strong> - ${stageName} • ${courseName} <span class="sim-dep-badge badge-direct-next">⚡ حرمان مباشر من الكورس القادم</span></li>`;
+                        return `
+                            <li>
+                                <div class="sim-dep-item-info">
+                                    <strong class="sim-dep-name">${dep.nameAr}</strong>
+                                    <span class="sim-dep-stage">${stageName} • ${courseName}</span>
+                                </div>
+                                <span class="sim-dep-badge badge-ontime-no">❌ تتأجّل</span>
+                            </li>
+                        `;
                     }).join('');
 
                     directSubgroupsHTML += `
@@ -709,15 +721,25 @@ function renderRegisteredGrid() {
                     const listHTML = laterSemDirect.map(dep => {
                         const stageName = getStageName(Math.ceil(dep.sem / 2));
                         const courseName = getCourseName(dep.sem);
-                        return `<li><strong>${dep.nameAr}</strong> - ${stageName} • ${courseName} <span class="sim-dep-badge badge-direct-later">🔒 حرمان مباشر من كورس لاحق</span></li>`;
+                        const canRegisterOnTime = dep.sem > course.sem + 2;
+                        const statusBadge = canRegisterOnTime
+                            ? `<span class="sim-dep-badge badge-ontime-yes">✅ بموعدها</span>`
+                            : `<span class="sim-dep-badge badge-ontime-no">❌ تتأجّل</span>`;
+
+                        return `
+                            <li>
+                                <div class="sim-dep-item-info">
+                                    <strong class="sim-dep-name">${dep.nameAr}</strong>
+                                    <span class="sim-dep-stage">${stageName} • ${courseName}</span>
+                                </div>
+                                ${statusBadge}
+                            </li>
+                        `;
                     }).join('');
 
                     directSubgroupsHTML += `
                         <div class="sim-direct-subgroup" style="${immediateNextSemDirect.length > 0 ? 'margin-top:0.5rem;' : ''}">
                             <div class="sim-subgroup-title">📅 حرمان مباشر من كورس لاحق (${laterSemDirect.length} مواد):</div>
-                            <div class="sim-subgroup-note-yellow">
-                                💡 <strong>ملاحظة هامة:</strong> إذا نجح الطالب بإعادة مادة (${course.nameAr}) قبل حلول هذه الفصول الدراسية، سيتمكن من تسجيل هذه المواد وخوضها بصورة طبيعية دون أي تأخير. إلا إذا كانت المادة في نفس الكورس الذي سيتم إعادة المادة فيه، هنا سيتم تأجيل تسجيلها إلى العام اللاحق.
-                            </div>
                             <ul class="fail-impact-list">
                                 ${listHTML}
                             </ul>
@@ -726,25 +748,33 @@ function renderRegisteredGrid() {
                 }
 
                 let indirectBtnHTML = '';
-                if (indirectDependents.length > 0) {
-                    const indirectListHTML = indirectDependents.map(dep => {
-                        const fullSemInfo = getFullStageAndCourseName(dep.sem);
-                        return `<li><strong>${dep.nameAr}</strong> - ${fullSemInfo} <span class="indirect-tag">(حرمان غير مباشر)</span></li>`;
-                    }).join('');
-
+                const totalDependentsCount = directDependents.length + indirectDependents.length;
+                if (totalDependentsCount > 0) {
                     indirectBtnHTML = `
-                        <div class="indirect-toggle-wrapper">
-                            <button class="btn-toggle-indirect" type="button">
-                                <span class="info-circle-icon">ⓘ</span>
-                                <span>اطّلع على المواد التي تعتمد على هذه المادة بشكل غير مباشر (تسلسلي) (${indirectDependents.length} مواد)</span>
+                        <div class="sim-chains-btn-wrapper">
+                            <button class="btn-open-sim-chains" type="button" data-subject-code="${course.code}" onclick="openSimChainsModal('${course.code}')">
+                                <span>🗺️ خريطة مسارات التأثير (${totalDependentsCount} مساراً)</span>
                             </button>
-                            <div class="indirect-collapsible-box" style="display: none;">
-                                <div class="yellow-box-title">💡 المواد التي تعتمد على هذه المادة بشكل غير مباشر (تسلسلي):</div>
-                                <ul class="yellow-box-list">
-                                    ${indirectListHTML}
-                                </ul>
-                                <div class="yellow-box-footer-note">
-                                    لكن إذا تم إنجاز هذه المادة، والمواد الأخرى المرتبطة تسلسليًا بها، يمكن خوض هذه المواد بشكل طبيعي في أعوامها وفصولها المحددة.
+                        </div>
+                    `;
+                }
+
+                let yellowNoteHTML = '';
+                if (laterSemDirect.length > 0 || indirectDependents.length > 0) {
+                    yellowNoteHTML = `
+                        <div class="sim-subgroup-note-yellow">
+                            <div class="subgroup-note-title-row">
+                                <span class="subgroup-note-icon">💡</span>
+                                <span class="subgroup-note-title">توضيح شارات التسجيل بالموعد:</span>
+                            </div>
+                            <div class="subgroup-note-legend">
+                                <div class="legend-item">
+                                    <span class="tag-yes">✅ بموعدها</span>
+                                    <span class="legend-text">يُمكن تسجيل المادة بموعدها الأصلي عند النجاح التكويني بإعادة (${course.nameAr}) العام القادم.</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="tag-no">❌ تتأجّل</span>
+                                    <span class="legend-text">تتأجل المادة لتزامن موعدها مع كورس الإعادة العام القادم.</span>
                                 </div>
                             </div>
                         </div>
@@ -753,7 +783,8 @@ function renderRegisteredGrid() {
 
                 failImpactHTML = `
                     <div class="fail-impact-banner">
-                        <div class="fail-impact-title">🚨 سيؤدي الرسوب بمادة (${course.nameAr}) إلى حرمان مباشر من التسجيل على:</div>
+                        <div class="fail-impact-title">🚨 سيؤدي الرسوب بمادة (${course.nameAr}) إلى:</div>
+                        ${yellowNoteHTML}
                         ${directSubgroupsHTML}
                         ${indirectBtnHTML}
                     </div>
@@ -761,24 +792,37 @@ function renderRegisteredGrid() {
             } else if (indirectDependents.length > 0) {
                 const listHTML = indirectDependents.map(dep => {
                     const fullSemInfo = getFullStageAndCourseName(dep.sem);
-                    return `<li><strong>${dep.nameAr}</strong> - ${fullSemInfo} <span class="indirect-tag">(حرمان غير مباشر)</span></li>`;
+                    const canRegisterOnTime = dep.sem > course.sem + 2;
+                    const statusBadge = canRegisterOnTime
+                        ? `<span class="sim-dep-badge badge-ontime-yes">✅ بموعدها</span>`
+                        : `<span class="sim-dep-badge badge-ontime-no">❌ تتأجّل</span>`;
+
+                    return `
+                        <li>
+                            <div class="sim-dep-item-info">
+                                <strong class="sim-dep-name">${dep.nameAr}</strong>
+                                <span class="sim-dep-stage">${fullSemInfo}</span>
+                            </div>
+                            ${statusBadge}
+                        </li>
+                    `;
                 }).join('');
 
                 failImpactHTML = `
                     <div class="yellow-pass-box">
-                        <div class="yellow-box-title">⚠️ قد تؤدي عدم إنجاز هذه المادة إلى حرمان غير مباشر (تسلسلي) من:</div>
+                        <div class="yellow-box-title">⚠️ قد يؤدي عدم إنجاز هذه المادة إلى حرمان متسلسل من:</div>
                         <ul class="yellow-box-list">
                             ${listHTML}
                         </ul>
                         <div class="yellow-box-footer-note">
-                            لكن إذا تم إنجاز هذه المادة، والمواد الأخرى المرتبطة تسلسليًا بها، يمكن خوض هذه المواد بشكل طبيعي في أعوامها وفصولها المحددة.
+                            لكن إذا تم إنجاز هذه المادة، والمواد الأخرى المرتبطة متسلسلاً بها، يمكن خوض هذه المواد بشكل طبيعي في أعوامها وفصولها المحددة.
                         </div>
                     </div>
                 `;
             } else {
                 failImpactHTML = `
                     <div class="fail-impact-banner muted">
-                        ℹ️ الرسوب بمادة (${course.nameAr}) لا يسبب حرمان مباشر أو غير مباشر من تسجيل أي مادة في الكورسات القادمة، لكن تؤدي الى سنة خامسة بسبب حد عدد الوحدات لكل كورس
+                        ℹ️ الرسوب بمادة (${course.nameAr}) لا يسبب حرمان مباشر أو متسلسل من تسجيل أي مادة في الكورسات القادمة، لكن تؤدي الى سنة خامسة بسبب حد عدد الوحدات لكل كورس
                     </div>
                 `;
             }
@@ -831,17 +875,10 @@ function renderRegisteredGrid() {
             renderSimulationUI();
         });
 
-        const btnToggleIndirect = card.querySelector('.btn-toggle-indirect');
-        if (btnToggleIndirect) {
-            btnToggleIndirect.addEventListener('click', () => {
-                const box = card.querySelector('.indirect-collapsible-box');
-                if (box) {
-                    const isHidden = box.style.display === 'none';
-                    box.style.display = isHidden ? 'block' : 'none';
-                    btnToggleIndirect.querySelector('span:last-child').textContent = isHidden 
-                        ? 'إخفاء المواد التي تعتمد على هذه المادة أيضاً' 
-                        : 'اطّلع على المواد التي تعتمد على هذه المادة أيضاً';
-                }
+        const btnOpenChains = card.querySelector('.btn-open-sim-chains');
+        if (btnOpenChains) {
+            btnOpenChains.addEventListener('click', () => {
+                openSimChainsModal(item.code);
             });
         }
 
@@ -918,41 +955,129 @@ function renderRegistrationPanels(panelsData, activeSem) {
             let delayWarningHTML = '';
 
             if (allDownstream.length > 0) {
-                const depItemsHTML = [];
+                let subgroupsHTML = '';
 
-                immediateNextSemDirect.forEach(dep => {
-                    const stageName = getStageName(Math.ceil(dep.sem / 2));
-                    const courseName = getCourseName(dep.sem);
-                    depItemsHTML.push(`<li><strong>${dep.nameAr}</strong> (${stageName} • ${courseName}) - <span class="tag-direct-next">⚡ حرمان مباشر من الكورس القادم</span></li>`);
-                });
+                if (immediateNextSemDirect.length > 0) {
+                    const listHTML = immediateNextSemDirect.map(dep => {
+                        const stageName = getStageName(Math.ceil(dep.sem / 2));
+                        const courseName = getCourseName(dep.sem);
+                        return `
+                            <li>
+                                <div class="sim-dep-item-info">
+                                    <strong class="sim-dep-name">${dep.nameAr}</strong>
+                                    <span class="sim-dep-stage">${stageName} • ${courseName}</span>
+                                </div>
+                                <span class="sim-dep-badge badge-ontime-no">❌ تتأجّل</span>
+                            </li>
+                        `;
+                    }).join('');
 
-                laterSemDirect.forEach(dep => {
-                    const stageName = getStageName(Math.ceil(dep.sem / 2));
-                    const courseName = getCourseName(dep.sem);
-                    depItemsHTML.push(`<li><strong>${dep.nameAr}</strong> (${stageName} • ${courseName}) - <span class="tag-direct-later">🔒 حرمان مباشر من كورس لاحق</span></li>`);
-                });
+                    subgroupsHTML += `
+                        <div class="sim-direct-subgroup">
+                            <div class="sim-subgroup-title">⚡ حرمان مباشر من الكورس القادم (${immediateNextSemDirect.length} مواد):</div>
+                            <ul class="fail-impact-list">
+                                ${listHTML}
+                            </ul>
+                        </div>
+                    `;
+                }
 
-                indirectDependents.forEach(dep => {
-                    const fullSemInfo = getFullStageAndCourseName(dep.sem);
-                    depItemsHTML.push(`<li><strong>${dep.nameAr}</strong> (${fullSemInfo}) - <span class="tag-indirect">⛓️ حرمان غير مباشر</span></li>`);
-                });
+                if (laterSemDirect.length > 0) {
+                    const listHTML = laterSemDirect.map(dep => {
+                        const stageName = getStageName(Math.ceil(dep.sem / 2));
+                        const courseName = getCourseName(dep.sem);
+                        const canRegisterOnTime = dep.sem > mod.origSem + 2;
+                        const statusBadge = canRegisterOnTime
+                            ? `<span class="sim-dep-badge badge-ontime-yes">✅ بموعدها</span>`
+                            : `<span class="sim-dep-badge badge-ontime-no">❌ تتأجّل</span>`;
+
+                        return `
+                            <li>
+                                <div class="sim-dep-item-info">
+                                    <strong class="sim-dep-name">${dep.nameAr}</strong>
+                                    <span class="sim-dep-stage">${stageName} • ${courseName}</span>
+                                </div>
+                                ${statusBadge}
+                            </li>
+                        `;
+                    }).join('');
+
+                    subgroupsHTML += `
+                        <div class="sim-direct-subgroup" style="${immediateNextSemDirect.length > 0 ? 'margin-top:0.4rem;' : ''}">
+                            <div class="sim-subgroup-title">📅 حرمان مباشر من كورس لاحق (${laterSemDirect.length} مواد):</div>
+                            <ul class="fail-impact-list">
+                                ${listHTML}
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                if (indirectDependents.length > 0) {
+                    const listHTML = indirectDependents.map(dep => {
+                        const fullSemInfo = getFullStageAndCourseName(dep.sem);
+                        const canRegisterOnTime = dep.sem > mod.origSem + 2;
+                        const statusBadge = canRegisterOnTime
+                            ? `<span class="sim-dep-badge badge-ontime-yes">✅ بموعدها</span>`
+                            : `<span class="sim-dep-badge badge-ontime-no">❌ تتأجّل</span>`;
+
+                        return `
+                            <li>
+                                <div class="sim-dep-item-info">
+                                    <strong class="sim-dep-name">${dep.nameAr}</strong>
+                                    <span class="sim-dep-stage">${fullSemInfo}</span>
+                                </div>
+                                ${statusBadge}
+                            </li>
+                        `;
+                    }).join('');
+
+                    subgroupsHTML += `
+                        <div class="sim-direct-subgroup" style="${(immediateNextSemDirect.length > 0 || laterSemDirect.length > 0) ? 'margin-top:0.4rem;' : ''}">
+                            <div class="sim-subgroup-title">⛓️ حرمان متسلسل (${indirectDependents.length} مواد):</div>
+                            <ul class="fail-impact-list">
+                                ${listHTML}
+                            </ul>
+                        </div>
+                    `;
+                }
 
                 const currentExtraYears = simulationState.maxExtraYearsIncurred || 0;
                 const impact = analyzeDelayImpact(mod.code, activeSem);
 
                 let footerWarningHTML = '';
                 if (impact === 'exceeds_max_years') {
-                    footerWarningHTML = '<div class="delay-warning-footer" style="background:rgba(220,38,38,0.15);color:#dc2626;border-color:rgba(220,38,38,0.3);">⚠️ عدم اضافة هذه المادة قد يؤدي الى تجاوز حد السنين وترقين القيد</div>';
+                    footerWarningHTML = '<div class="delay-warning-footer" style="background:rgba(220,38,38,0.15);color:#dc2626;border-color:rgba(220,38,38,0.3);">⚠️ عدم إضافة هذه المادة يؤدي إلى تجاوز حد السنين الجامعة وترقين القيد!</div>';
                 } else if (impact === 'causes_sixth_year' && currentExtraYears < 2) {
                     footerWarningHTML = '<div class="delay-warning-footer">⚠️ تنبيه: تأجيل هذه المادة يؤدي إلى سنة سادسة!</div>';
                 }
 
+                let yellowNoteHTML = '';
+                if (laterSemDirect.length > 0 || indirectDependents.length > 0) {
+                    yellowNoteHTML = `
+                        <div class="sim-subgroup-note-yellow">
+                            <div class="subgroup-note-title-row">
+                                <span class="subgroup-note-icon">💡</span>
+                                <span class="subgroup-note-title">توضيح شارات التسجيل بالموعد:</span>
+                            </div>
+                            <div class="subgroup-note-legend">
+                                <div class="legend-item">
+                                    <span class="tag-yes">✅ بموعدها</span>
+                                    <span class="legend-text">يُمكن تسجيل المادة بموعدها الأصلي عند النجاح التكويني بإعادة (${mod.nameAr}) العام القادم.</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="tag-no">❌ تتأجّل</span>
+                                    <span class="legend-text">تتأجل المادة لتزامن موعدها مع كورس الإعادة العام القادم.</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 delayWarningHTML = `
                     <div class="available-delay-warning">
-                        <div class="delay-warning-title">🚨 عدم إضافتك هذه المادة سيؤدي إلى حرمانك من التسجيل على المواد:</div>
-                        <ul class="delay-warning-list">
-                            ${depItemsHTML.join('')}
-                        </ul>
+                        <div class="delay-warning-title">🚨 عدم إضافتك لمادة (${mod.nameAr}) سيتسبب في تأثر المواد التالية:</div>
+                        ${yellowNoteHTML}
+                        ${subgroupsHTML}
                         ${footerWarningHTML}
                     </div>
                 `;
@@ -1753,7 +1878,10 @@ function renderQuickLookResults() {
                         </div>
                         <div class="ql-dep-item-bottom">
                             <span class="ql-dep-item-stage">${depStageName} • ${depCourse}</span>
-                            <span class="ql-dep-tag tag-direct-block">🚫 حرمان فوري مباشر</span>
+                            <div class="ql-dep-tags-group">
+                                <span class="ql-dep-tag tag-direct-block">🚫 حرمان فوري مباشر</span>
+                                <span class="ql-dep-tag tag-ontime-no">❌ تتأجّل</span>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1776,6 +1904,7 @@ function renderQuickLookResults() {
                 const depStage = Math.ceil(dep.sem / 2);
                 const depStageName = getStageName(depStage);
                 const depCourse = getCourseName(dep.sem);
+                const canRegisterOnTime = dep.sem > subject.sem + 2;
                 return `
                     <div class="ql-dep-item-card">
                         <div class="ql-dep-item-top">
@@ -1784,7 +1913,14 @@ function renderQuickLookResults() {
                         </div>
                         <div class="ql-dep-item-bottom">
                             <span class="ql-dep-item-stage">${depStageName} • ${depCourse}</span>
-                            <span class="ql-dep-tag tag-direct-block">🔒 حرمان مباشر من كورسات لاحقة</span>
+                            <div class="ql-dep-tags-group">
+                                <span class="ql-dep-tag tag-direct-block">🔒 حرمان مباشر من كورسات لاحقة</span>
+                                ${canRegisterOnTime ? `
+                                    <span class="ql-dep-tag tag-ontime-yes">✅ بموعدها</span>
+                                ` : `
+                                    <span class="ql-dep-tag tag-ontime-no">❌ تتأجّل</span>
+                                `}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1794,10 +1930,6 @@ function renderQuickLookResults() {
                 <div class="ql-direct-subgroup">
                     <div class="ql-subgroup-title">
                         <span>📅 حرمان مباشر من الكورسات الأخرى اللاحقة (${laterSemDirect.length} مواد):</span>
-                    </div>
-                    <div class="ql-subgroup-note-yellow">
-                        <span class="subgroup-note-icon">💡</span>
-                        <span><strong>ملاحظة هامة:</strong> إذا نجح الطالب بإعادة مادة (${subject.nameAr}) قبل حلول هذه الفصول الدراسية، سيتمكن من تسجيل هذه المواد وخوضها بصورة طبيعية دون أي تأخير. إلا إذا كانت المادة في نفس الكورس الذي سيتم إعادة المادة فيه، هنا سيتم تأجيل تسجيلها إلى العام اللاحق.</span>
                     </div>
                     <div class="ql-deps-list">
                         ${listHTML}
@@ -1821,7 +1953,7 @@ function renderQuickLookResults() {
                         </div>
                         <div class="ql-dep-item-bottom">
                             <span class="ql-dep-item-stage">${depStageName} • ${depCourse}</span>
-                            <span class="ql-dep-tag tag-indirect-block">⛓️ حرمان تسلسلي تراكمي</span>
+                            <span class="ql-dep-tag tag-indirect-block">⛓️ حرمان متسلسل</span>
                         </div>
                     </div>
                 `;
@@ -1851,15 +1983,27 @@ function renderQuickLookResults() {
             const depStageName = getStageName(depStage);
             const depCourse = getCourseName(dep.sem);
             const isImmediateNext = (dep.sem === subject.sem + 1);
+            const canRegisterOnTime = dep.sem > subject.sem + 2;
+
             const timingBadge = isImmediateNext
-                ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ حرمان فوري (الكورس القادم)</span>`
-                : `<span class="ql-chain-timing-badge badge-timing-later">📅 حرمان من كورس لاحق</span>`;
+                ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ حرمان فوري</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`
+                : canRegisterOnTime
+                ? `<span class="ql-chain-timing-badge badge-timing-later">📅 حرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>`
+                : `<span class="ql-chain-timing-badge badge-timing-later">📅 حرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`;
+
+            const noteFooter = isImmediateNext
+                ? `<div class="ql-chain-note-footer note-danger"><div class="ql-chain-note-title">🚨 تأثير مباشر:</div><div class="ql-chain-note-text">يتطلب تسجيل (${dep.nameAr}) النجاح في (${subject.nameAr}) أولاً، وبسبب الرسوب لن يُسمح بتسجيلها في الكورس القادم.</div></div>`
+                : canRegisterOnTime
+                ? `<div class="ql-chain-note-footer note-success"><div class="ql-chain-note-title">✅ إمكانية التسجيل:</div><div class="ql-chain-note-text">إعادة (${subject.nameAr}) والنجاح التكويني فيها العام القادم تضمن تسجيل (${dep.nameAr}) بموعدها دون تأخير.</div></div>`
+                : `<div class="ql-chain-note-footer note-warning"><div class="ql-chain-note-title">⚠️ تزامن الإعادة:</div><div class="ql-chain-note-text">موعد (${dep.nameAr}) يتزامن مع إعادة (${subject.nameAr}) العام القادم، مما يمنع تسجيلها بموعدها.</div></div>`;
 
             return `
                 <div class="ql-chain-flow-item">
                     <div class="ql-chain-flow-header">
                         <span class="ql-chain-stage-meta">🎓 ${depStageName} • ${depCourse}</span>
-                        ${timingBadge}
+                        <div class="ql-chain-badges-group">
+                            ${timingBadge}
+                        </div>
                     </div>
                     <div class="ql-chain-flow-body">
                         <div class="ql-chain-flow">
@@ -1867,6 +2011,7 @@ function renderQuickLookResults() {
                             <span class="ql-chain-arrow">←</span>
                             <span class="ql-chain-node node-direct">${dep.nameAr}</span>
                         </div>
+                        ${noteFooter}
                     </div>
                 </div>
             `;
@@ -1883,9 +2028,19 @@ function renderQuickLookResults() {
                 const lastStageName = getStageName(lastStage);
                 const lastCourse = getCourseName(lastDep.sem);
                 const isImmediateNext = (firstDep.sem === subject.sem + 1);
+                const canRegisterOnTime = firstDep.sem > subject.sem + 2;
+
                 const timingBadge = isImmediateNext
-                    ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري (الكورس القادم)</span>`
-                    : `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span>`;
+                    ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`
+                    : canRegisterOnTime
+                    ? `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>`
+                    : `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`;
+
+                const noteFooter = isImmediateNext
+                    ? `<div class="ql-chain-note-footer note-danger"><div class="ql-chain-note-title">🚨 سلسلة حرمان حرجة:</div><div class="ql-chain-note-text">تبدأ بحرمان فوري من (${firstDep.nameAr}) وتسبب تأخيراً متسلسلاً يمتد إلى (${lastDep.nameAr}).</div></div>`
+                    : canRegisterOnTime
+                    ? `<div class="ql-chain-note-footer note-success"><div class="ql-chain-note-title">✅ سلسلة آمنة:</div><div class="ql-chain-note-text">إعادة (${subject.nameAr}) والنجاح التكويني فيها العام القادم يضمن حماية السلسلة وتسجيل كافة المواد حتى (${lastDep.nameAr}) بمواعيدها.</div></div>`
+                    : `<div class="ql-chain-note-footer note-warning"><div class="ql-chain-note-title">⚠️ تأثير تراكمي:</div><div class="ql-chain-note-text">تزامن إعادة (${subject.nameAr}) مع بداية السلسلة (${firstDep.nameAr}) يؤدي لإزاحة المسار بأكمله حتى (${lastDep.nameAr}).</div></div>`;
 
                 const nodesHTML = path.map((item, idx) => {
                     const nodeName = item.nameAr;
@@ -1902,10 +2057,13 @@ function renderQuickLookResults() {
                     <div class="ql-chain-flow-item">
                         <div class="ql-chain-flow-header">
                             <span class="ql-chain-stage-meta">⛓️ مسار يمتد إلى (${lastStageName} • ${lastCourse})</span>
-                            ${timingBadge}
+                            <div class="ql-chain-badges-group">
+                                ${timingBadge}
+                            </div>
                         </div>
                         <div class="ql-chain-flow-body">
                             <div class="ql-chain-flow">${nodesHTML}</div>
+                            ${noteFooter}
                         </div>
                     </div>
                 `;
@@ -1922,7 +2080,7 @@ function renderQuickLookResults() {
                         <h3 class="ql-impact-title">مسار سلسلة الاعتماد الأكاديمي المتسلسل</h3>
                     </div>
                     <p class="ql-impact-desc">
-                        تتبع مسارات الاعتماد الأكاديمي مقسمة إلى حرمان مباشر وحرمان غير مباشر (تسلسلي):
+                        تتبع مسارات الاعتماد الأكاديمي مقسمة إلى حرمان مباشر وحرمان متسلسل:
                     </p>
                     <button type="button" class="btn-toggle-ql-chain" id="btnToggleQlChain">
                         <span>🗺️ استكشاف وتتبع مسارات السلسلة</span>
@@ -1940,11 +2098,11 @@ function renderQuickLookResults() {
                             </div>
                         </div>
 
-                        <!-- قسم مسارات الحرمان غير المباشر (التسلسلي) -->
+                        <!-- قسم مسارات الحرمان المتسلسل -->
                         ${indirectPathsHTML ? `
                         <div class="ql-chain-category-card">
                             <div class="ql-chain-category-header">
-                                <span class="ql-chain-category-badge badge-indirect">⛓️ مسارات الحرمان غير المباشر والتسلسلي (${indirectPaths.length} مسار)</span>
+                                <span class="ql-chain-category-badge badge-indirect">⛓️ مسارات الحرمان المتسلسل (${indirectPaths.length} مسار)</span>
                                 <span class="ql-chain-category-subtitle">السلاسل الممتدة والتأثير التراكمي عبر الفصول والمراحل:</span>
                             </div>
                             <div class="ql-chain-paths-container">
@@ -1954,7 +2112,7 @@ function renderQuickLookResults() {
                         ` : `
                         <div class="ql-chain-category-card ql-chain-empty-card">
                             <div class="ql-chain-empty-notice">
-                                <span>✨ لا توجد مسارات حرمان غير مباشر أو سلاسل تراكمية لاحقة تتفرع من هذه المادة.</span>
+                                <span>✨ لا توجد مسارات حرمان متسلسل أو سلاسل تراكمية لاحقة تتفرع من هذه المادة.</span>
                             </div>
                         </div>
                         `}
@@ -1963,7 +2121,30 @@ function renderQuickLookResults() {
             `;
         }
 
+        let yellowNoteHTML = '';
+        if (laterSemDirect.length > 0 || indirectDependents.length > 0) {
+            yellowNoteHTML = `
+                <div class="sim-subgroup-note-yellow" style="margin-bottom:0.75rem;">
+                    <div class="subgroup-note-title-row">
+                        <span class="subgroup-note-icon">💡</span>
+                        <span class="subgroup-note-title">توضيح شارات التسجيل بالموعد:</span>
+                    </div>
+                    <div class="subgroup-note-legend">
+                        <div class="legend-item">
+                            <span class="tag-yes">✅ بموعدها</span>
+                            <span class="legend-text">يُمكن تسجيل المادة بموعدها الأصلي عند النجاح التكويني بإعادة (${subject.nameAr}) العام القادم.</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="tag-no">❌ تتأجّل</span>
+                            <span class="legend-text">تتأجل المادة لتزامن موعدها مع كورس الإعادة العام القادم.</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         impactContentHTML = `
+            ${yellowNoteHTML}
             <div class="ql-impact-grid">
                 ${directDependents.length > 0 ? `
                     <div class="ql-impact-card ql-direct-box">
@@ -1984,10 +2165,10 @@ function renderQuickLookResults() {
                     <div class="ql-impact-card ql-indirect-box">
                         <div class="ql-impact-header">
                             <span class="ql-impact-icon">⛓️</span>
-                            <h3 class="ql-impact-title">الحرمان غير المباشر والتسلسلي (${indirectDependents.length} مواد)</h3>
+                            <h3 class="ql-impact-title">الحرمان المتسلسل (${indirectDependents.length} مواد)</h3>
                         </div>
                         <p class="ql-impact-desc">
-                            هذه المواد ترتبط بشكل غير مباشر بالمادة أعلاه وقد يؤدي الرسوب إلى تأخير تسجيل بعض المواد وعدم خوضها في كورساتها المحددة، ويمكنك استكشاف المسارات المرتبطة من خلال <a href="#qlChainsBox" id="linkJumpToChains" class="ql-chain-hyperlink">مسار سلسلة الاعتماد الأكاديمي المتسلسل</a>.
+                            تتأثر هذه المواد تسلسلياً بالرسوب في (${subject.nameAr})؛ حيث يتأجل بعضها لتزامنه مع الإعادة، أو تُسجّل بموعدها عند النجاح التكويني. التفاصيل عبر <a href="#qlChainsBox" id="linkJumpToChains" class="ql-chain-hyperlink">خريطة مسارات الاعتماد الأكاديمي</a>.
                         </p>
                         <div class="ql-deps-list">
                             ${indirectListHTML}
@@ -2015,7 +2196,6 @@ function renderQuickLookResults() {
                     <button type="button" class="btn-share-ql-icon" id="btnShareQlSubject" title="نسخ رابط المادة المباشر">
                         <span>🔗</span>
                     </button>
-                    <span class="share-copied-toast" id="shareCopiedToast" style="display: none;">✓ تم نسخ الرابط</span>
                 </div>
             </div>
             <div class="ql-target-meta-badges">
@@ -2047,14 +2227,7 @@ function renderQuickLookResults() {
                 document.body.removeChild(tempInput);
             }
 
-            const toast = document.getElementById('shareCopiedToast');
-            if (toast) {
-                toast.style.display = 'inline-flex';
-                if (window.shareToastTimer) clearTimeout(window.shareToastTimer);
-                window.shareToastTimer = setTimeout(() => {
-                    toast.style.display = 'none';
-                }, 2000);
-            }
+            showAppToast('تم نسخ الرابط');
         });
     }
 
@@ -2164,6 +2337,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Simulator Chains Modal Listeners
+    const btnCloseSimChains = document.getElementById('btnCloseSimChainsModal');
+    if (btnCloseSimChains) {
+        btnCloseSimChains.addEventListener('click', closeSimChainsModal);
+    }
+    const simChainsModal = document.getElementById('simChainsModal');
+    if (simChainsModal) {
+        simChainsModal.addEventListener('click', (e) => {
+            if (e.target === simChainsModal) {
+                closeSimChainsModal();
+            }
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-open-sim-chains');
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const code = btn.getAttribute('data-subject-code');
+            if (code) {
+                openSimChainsModal(code);
+            }
+        }
+    });
+
     // Browser Back / Forward Button Navigation Support
     function handleHistoryNavigation(e) {
         const stateScreen = e?.state?.screen;
@@ -2200,3 +2399,204 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initSimulation();
 });
+
+function showAppToast(message, duration = 2500) {
+    let toast = document.getElementById('globalAppToast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'globalAppToast';
+        toast.className = 'global-app-toast';
+        document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<span class="toast-icon">✓</span><span class="toast-text">${message}</span>`;
+
+    toast.classList.remove('show');
+    void toast.offsetWidth;
+    toast.classList.add('show');
+
+    if (window.globalAppToastTimer) {
+        clearTimeout(window.globalAppToastTimer);
+    }
+    window.globalAppToastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+    }, duration);
+}
+
+// ----------------------------------------------------
+// Simulator Interactive Chains Modal Functions
+// ----------------------------------------------------
+function openSimChainsModal(subjectCode) {
+    const subject = curriculumMap[subjectCode];
+    if (!subject) return;
+
+    const modal = document.getElementById('simChainsModal');
+    const titleEl = document.getElementById('simChainsModalTitle');
+    const subtitleEl = document.getElementById('simChainsModalSubtitle');
+    const bodyEl = document.getElementById('simChainsModalBody');
+
+    if (!modal || !bodyEl) return;
+
+    const subjectStage = Math.ceil(subject.sem / 2);
+    const subjectStageName = getStageName(subjectStage);
+    const subjectCourseName = getCourseName(subject.sem);
+
+    if (titleEl) {
+        titleEl.textContent = `خريطة ومسارات الاعتماد والتأثير للمادة: ${subject.nameAr}`;
+    }
+    if (subtitleEl) {
+        subtitleEl.textContent = `🎓 ${subjectStageName} • ${subjectCourseName}`;
+    }
+
+    const directDependents = getDirectDependents(subjectCode);
+    
+    // Build all chain paths recursively with cycle safety
+    const allPaths = [];
+    function buildChain(code, currentPath) {
+        const nexts = getDirectDependents(code);
+        if (nexts.length === 0) {
+            if (currentPath.length > 1) {
+                allPaths.push([...currentPath]);
+            }
+            return;
+        }
+        nexts.forEach(n => {
+            if (currentPath.some(x => x.code === n.code)) return;
+            buildChain(n.code, [...currentPath, n]);
+        });
+    }
+    buildChain(subjectCode, [subject]);
+
+    const indirectPaths = allPaths.filter(p => p.length > 2);
+
+    // Direct Paths HTML
+    const directPathsHTML = directDependents.map((dep) => {
+        const depStage = Math.ceil(dep.sem / 2);
+        const depStageName = getStageName(depStage);
+        const depCourse = getCourseName(dep.sem);
+        const isImmediateNext = (dep.sem === subject.sem + 1);
+        const canRegisterOnTime = dep.sem > subject.sem + 2;
+
+        const timingBadge = isImmediateNext
+            ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ حرمان فوري</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`
+            : canRegisterOnTime
+            ? `<span class="ql-chain-timing-badge badge-timing-later">📅 حرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>`
+            : `<span class="ql-chain-timing-badge badge-timing-later">📅 حرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`;
+
+        const noteFooter = isImmediateNext
+            ? `<div class="ql-chain-note-footer note-danger"><div class="ql-chain-note-title">🚨 تأثير مباشر:</div><div class="ql-chain-note-text">يتطلب تسجيل (${dep.nameAr}) النجاح في (${subject.nameAr}) أولاً، وبسبب الرسوب لن يُسمح بتسجيلها في الكورس القادم.</div></div>`
+            : canRegisterOnTime
+            ? `<div class="ql-chain-note-footer note-success"><div class="ql-chain-note-title">✅ إمكانية التسجيل:</div><div class="ql-chain-note-text">إعادة (${subject.nameAr}) والنجاح التكويني فيها العام القادم تضمن تسجيل (${dep.nameAr}) بموعدها دون تأخير.</div></div>`
+            : `<div class="ql-chain-note-footer note-warning"><div class="ql-chain-note-title">⚠️ تزامن الإعادة:</div><div class="ql-chain-note-text">موعد (${dep.nameAr}) يتزامن مع إعادة (${subject.nameAr}) العام القادم، مما يمنع تسجيلها بموعدها.</div></div>`;
+
+        return `
+            <div class="ql-chain-flow-item">
+                <div class="ql-chain-flow-header">
+                    <span class="ql-chain-stage-meta">🎓 ${depStageName} • ${depCourse}</span>
+                    <div class="ql-chain-badges-group">
+                        ${timingBadge}
+                    </div>
+                </div>
+                <div class="ql-chain-flow-body">
+                    <div class="ql-chain-flow">
+                        <span class="ql-chain-node node-root">📌 ${subject.nameAr}</span>
+                        <span class="ql-chain-arrow">←</span>
+                        <span class="ql-chain-node node-direct">🔗 ${dep.nameAr}</span>
+                    </div>
+                    ${noteFooter}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Indirect Paths HTML
+    let indirectPathsHTML = '';
+    if (indirectPaths.length > 0) {
+        indirectPathsHTML = indirectPaths.map((path) => {
+            const firstDep = path[1];
+            const lastDep = path[path.length - 1];
+            const lastStage = Math.ceil(lastDep.sem / 2);
+            const lastStageName = getStageName(lastStage);
+            const lastCourse = getCourseName(lastDep.sem);
+            const isImmediateNext = (firstDep.sem === subject.sem + 1);
+            const canRegisterOnTime = firstDep.sem > subject.sem + 2;
+
+            const timingBadge = isImmediateNext
+                ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`
+                : canRegisterOnTime
+                ? `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>`
+                : `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`;
+
+            const noteFooter = isImmediateNext
+                ? `<div class="ql-chain-note-footer note-danger"><div class="ql-chain-note-title">🚨 سلسلة حرمان حرجة:</div><div class="ql-chain-note-text">تبدأ بحرمان فوري من (${firstDep.nameAr}) وتسبب تأخيراً متسلسلاً يمتد إلى (${lastDep.nameAr}).</div></div>`
+                : canRegisterOnTime
+                ? `<div class="ql-chain-note-footer note-success"><div class="ql-chain-note-title">✅ سلسلة آمنة:</div><div class="ql-chain-note-text">إعادة (${subject.nameAr}) والنجاح التكويني فيها العام القادم يضمن حماية السلسلة وتسجيل كافة المواد حتى (${lastDep.nameAr}) بمواعيدها.</div></div>`
+                : `<div class="ql-chain-note-footer note-warning"><div class="ql-chain-note-title">⚠️ تأثير تراكمي:</div><div class="ql-chain-note-text">تزامن إعادة (${subject.nameAr}) مع بداية السلسلة (${firstDep.nameAr}) تؤدي لإزاحة المسار بأكمله حتى (${lastDep.nameAr}).</div></div>`;
+
+            const nodesHTML = path.map((item, idx) => {
+                const nodeName = item.nameAr;
+                const nodeClass = idx === 0 ? 'node-root' : idx === 1 ? 'node-direct' : 'node-indirect';
+                const nodeIcon = idx === 0 ? '📌' : idx === 1 ? '🔗' : '⛓️';
+                return `<span class="ql-chain-node ${nodeClass}">${nodeIcon} ${nodeName}</span>`;
+            }).join('<span class="ql-chain-arrow">←</span>');
+
+            return `
+                <div class="ql-chain-flow-item">
+                    <div class="ql-chain-flow-header">
+                        <span class="ql-chain-stage-meta">⛓️ مسار يمتد إلى (${lastStageName} • ${lastCourse})</span>
+                        <div class="ql-chain-badges-group">
+                            ${timingBadge}
+                        </div>
+                    </div>
+                    <div class="ql-chain-flow-body">
+                        <div class="ql-chain-flow">${nodesHTML}</div>
+                        ${noteFooter}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    bodyEl.innerHTML = `
+        <!-- قسم مسارات الحرمان المباشر -->
+        <div class="sim-modal-section-card">
+            <div class="sim-modal-section-divider divider-direct">
+                <div class="sim-divider-header">
+                    <span class="sim-divider-icon">🚨</span>
+                    <h4 class="sim-divider-title">مسارات الحرمان المباشر (${directDependents.length} مسارات)</h4>
+                </div>
+                <span class="sim-divider-subtitle">الارتباطات المباشرة والتأثير الفوري عند عدم اجتياز المادة:</span>
+            </div>
+            <div class="ql-chain-paths-container">
+                ${directPathsHTML || '<p class="sim-no-paths-text">لا توجد مسارات حرمان مباشر لهذه المادة.</p>'}
+            </div>
+        </div>
+
+        <!-- قسم مسارات الحرمان المتسلسل -->
+        ${indirectPathsHTML ? `
+        <div class="sim-modal-section-card">
+            <div class="sim-modal-section-divider divider-indirect">
+                <div class="sim-divider-header">
+                    <span class="sim-divider-icon">⛓️</span>
+                    <h4 class="sim-divider-title">مسارات الحرمان المتسلسل (${indirectPaths.length} مساراً)</h4>
+                </div>
+                <span class="sim-divider-subtitle">السلاسل الممتدة والتأثير التراكمي عبر الفصول والمراحل:</span>
+            </div>
+            <div class="ql-chain-paths-container">
+                ${indirectPathsHTML}
+            </div>
+        </div>
+        ` : ''}
+    `;
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    if (bodyEl) bodyEl.scrollTop = 0;
+}
+
+function closeSimChainsModal() {
+    const modal = document.getElementById('simChainsModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}

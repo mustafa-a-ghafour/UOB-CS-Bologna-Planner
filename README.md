@@ -7,72 +7,80 @@
 ## 📌 نبذة عن الأداة (Overview)
 
 ### 🇮🇶 <img src="https://flagcdn.com/24x18/iq.png" width="22" height="16" alt="علم العراق"> اللغة العربية
-أداة متقدمة لمساعدة طلبة **قسم علوم الحاسوب في جامعة بغداد** في تسجيل موادهم الدراسية ومعرفة مسارهم الأكاديمي بدقة في حال حدوث **الرسوب التكويني**، وفهم كيفية تأثيره على المتطلبات المسبقة، وتوزيع الفصول الدراسية، واحتساب السنوات الإضافية وفق لوائح مسار بولونيا المعتمد.
+أداة متقدمة وتفاعلية لمساعدة طلبة **قسم علوم الحاسوب في جامعة بغداد** في تسجيل موادهم الدراسية ومعرفة مسارهم الأكاديمي بدقة في حال حدوث **الرسوب التكويني**، وفهم كيفية تأثيره على المتطلبات المسبقة، وتوزيع الفصول الدراسية، واحتساب السنوات الإضافية وفق لوائح مسار بولونيا المعتمد.
 
 ### 🇬🇧 <img src="https://flagcdn.com/24x18/gb.png" width="22" height="16" alt="UK Flag"> English
-A specialized academic tool designed to help **Computer Science students at the University of Baghdad** plan their course registration and track their academic trajectory in cases of **Formative Assessment Failure**, illustrating its impact on prerequisite chains, semester scheduling, and additional study years under the Bologna Process.
+An advanced interactive academic simulator designed to help **Computer Science students at the University of Baghdad** plan course registration and visualize their academic trajectory under **Formative Assessment Failure**, illustrating its impact on prerequisite chains, semester scheduling, and additional study years under Bologna Process regulations.
 
 ---
 
-## 🇮🇶 <img src="https://flagcdn.com/24x18/iq.png" width="22" height="16" alt="Iraq Flag"> آلية عمل النظام (باللغة العربية)
+## 🇮🇶 <img src="https://flagcdn.com/24x18/iq.png" width="22" height="16" alt="Iraq Flag"> آلية عمل النظام والتحديثات الرئيسية (باللغة العربية)
 
-### 1. التحقق من المتطلبات المسبقة (Prerequisite Validation)
-- فحص ترابط المواد الأكاديمية تسلسلياً بحيث يشترط اجتياز المادة المسبقة بنجاح قبل السماح بتسجيل المادة المعتمدة عليها في الفصول اللاحقة.
-- حجب المواد المتقدمة تلقائياً في حال عدم استيفاء متطلباتها وتوضيح سبب الحجب للطالب.
+### 1. التحقق من المتطلبات المسبقة والحرمان المباشر والمتسلسل (Prerequisite & Dependency Validation)
+- **الحرمان المباشر:** منع تسجيل المواد التي تتطلب النجاح التكويني المباشر في المادة المسبقة.
+- **مسارات الحرمان المتسلسل:** تتبع السلاسل الأكاديمية الممتدة والتأثير التراكمي للرسوب عبر المراحل والفصول الدراسية اللاحقة.
 
-### 2. معالجة الرسوب التكويني وإعادة المواد (Formative Failure & Retake Rules)
-- في حال الرسوب التكويني في مادة معينة، يلزم النظام الطالب بإعادة دراستها في نفس فصل الطرح المماثل (الفصول الفردية في الكورس الأول، والزوجية في الكورس الثاني).
-- منح المواد المعادة أولوية التسجيل الإلزامية قبل إضافة المواد الجديدة.
+### 2. نظام شارات التسجيل بالموعد ودليل الملاحظة التوضيحي (Registration Timing Badges & Legend)
+- اعتماد نظام شارات مقتضبة وعالية التباين لتبيان موقف تسجيل المواد اللاحقة عند إعادة المادة المسبقة العام القادم:
+  - **`✅ بموعدها`**: إمكانية تسجيل المادة بموعدها الأصلي عند النجاح التكويني في الإعادة.
+  - **`❌ تتأجّل`**: تأجيل تسجيل المادة لتزامن موعدها مع كورس الإعادة.
+- دليل توضيحي موحد (`💡 توضيح شارات التسجيل بالموعد`) يُعرض بقمة النظرة السريعة والمحاكي لتوضيح معاني الشارات وشروطها.
 
-### 3. سقف الوحدات الأكاديمية (ECTS Credit Limit)
+### 3. خريطة مسارات التأثير والاعتماد الأكاديمي (Interactive Chain Maps Modal)
+- نافذة تفاعلية منبثقة تفتح عبر زر (`🗺️ خريطة مسارات التأثير`) لاستكشاف كافة المسارات المباشرة والمتسلسلة المترتبة على الرسوب في أي مادة، مع تتبع كامل عقد المسار والأثر التراكمي.
+
+### 4. معالجة الرسوب التكويني وإعادة المواد (Formative Failure & Retake Rules)
+- إلزامية إعادة المادة في نفس فصل الطرح المماثل (الفصول الفردية في الكورس الأول، والزوجية في الكورس الثاني).
+- منح المواد المعادة أولوية التسجيل المطلقة قبل إضافة المواد الجديدة.
+
+### 5. سقف الوحدات الأكاديمية (30 ECTS Credit Limit)
 - تطبيق الحد الأقصى المسموح به فصلياً وهو **30 وحدة ECTS**.
-- ترحيل المواد التي لا تتسع لها خطة الفصل إلى فصول وسنوات لاحقة، مما قد يترتب عليه إضافة سنة دراسية إضافية.
+- ترحيل المواد الزائدة تلقائياً إلى الفصول والسنوات التالية.
 
-### 4. احتساب السنوات الإضافية وترقين القيد (Extra Years & Academic Dismissal)
-- احتساب تلقائي للسنوات الإضافية الناتجة عن تأخير المواد وسلاسل الارتباط الممتدة.
-- تنبيه الطالب عند الوصول إلى السنة الخامسة، ورصد الوصول إلى الحد الأقصى القانوني للدراسة (6 سنوات / 12 فصلاً) وإعلان حالة **ترقين القيد** في حال تعذر التخرج ضمن هذه المدة.
+### 6. احتساب السنوات الإضافية وترقين القيد (Extra Years & Academic Dismissal)
+- احتساب تلقائي ديناميكي للسنوات الإضافية، والتنبيه عند الوصول للسنة الخامسة، وإعلان **ترقين القيد** القانوني عند تجاوز الحد الأقصى (6 سنوات / 12 فصلاً).
 
-### 5. التنقل الزمني وتعديل المسار (Timeline Navigation)
-- إمكانية العودة لأي فصل دراسي سابق وتعديل حالات النجاح أو الرسوب مع إعادة بناء المسار الأكاديمي للفصول اللاحقة تلقائياً.
+### 7. النظرة السريعة المتقدمة والتصميم المتجاوب (Upgraded Quick Look & Responsive UI)
+- بطاقات معلومات محسنة ذات هيكلية عمودية ورأسية تضمن الوضوح التام وعدم انكسار النصوص على الهواتف المحمولة.
+- تموضع شارات `⛓️ حرمان متسلسل` بأقصى أسفل يسار الكارت لاقتطاع المساحة العمودية وتسهيل التصفح.
 
-### 6. مستكشف الارتباطات وسلاسل الحرمان (Dependency Inspector)
-- أداة لاستكشاف متطلبات أي مادة والمواد المستقبلية التي تعتمد عليها، لمعرفة أثر الرسوب فيها مسبقاً قبل اتخاذ القرارات الأكاديمية.
-
-### 7. توليد وتصدير السجل الأكاديمي (Transcript Generation & Export)
-- بناء سجل وصفي شامل يوثق مسار الطالب عبر جميع الفصول والمراحل وحالة كل مادة، مع إمكانية تصديره كملف صوري عالي الدقة.
+### 8. السجل الأكاديمي والتصدير (Transcript & Export)
+- إنشاء سجل وصفي شامل لكافة الفصول والمراحل مع إمكانية التصدير كصورة عالية الدقة.
 
 ---
 
-## 🇬🇧 <img src="https://flagcdn.com/24x18/gb.png" width="22" height="16" alt="UK Flag"> Operational Mechanisms (English)
+## 🇬🇧 <img src="https://flagcdn.com/24x18/gb.png" width="22" height="16" alt="UK Flag"> Key Features & System Mechanisms (English)
 
-### 1. Prerequisite Chain Validation
-- Sequentially validates course dependencies, preventing students from registering for advanced courses until their prerequisite requirements are fulfilled.
-- Automatically locks inaccessible courses and highlights the unmet prerequisite requirements.
+### 1. Direct & Sequential Deprivation Validation
+- **Direct Blocking:** Immediately locks downstream modules requiring prerequisite formative pass.
+- **Sequential Deprivation Paths:** Tracks multi-tier academic impact chains across future semesters and stages.
 
-### 2. Formative Failure Handling & Retake Scheduling
-- Enforces retake registration for failed courses during their corresponding semester season (Odd terms in Semester 1 / Even terms in Semester 2).
-- Prioritizes mandatory retake modules during enrollment before new curriculum modules can be added.
+### 2. Registration Timing Badges & Explanatory Legend
+- High-contrast concise badges indicating enrollment timing upon passing the retake course next year:
+  - **`✅ بموعدها` (On Time):** Course can be registered on schedule upon formatively passing the retake.
+  - **`❌ تتأجّل` (Deferred):** Course is deferred due to schedule clash with the retake semester.
+- Standardized explanatory legend box (`💡 توضيح شارات التسجيل بالموعد`) clarifying badge meanings.
 
-### 3. Semester Credit Ceiling (30 ECTS Cap)
-- Enforces a strict regulatory ceiling of **30 ECTS credits** per semester.
-- Deferred modules that exceed this cap are automatically rolled over to upcoming applicable semesters, determining potential academic delays.
+### 3. Interactive Impact & Dependency Chain Map Modal
+- Dedicated interactive modal opened via `🗺️ Impact Chain Map` button to explore full prerequisite chains, node paths, and cumulative blocking effects.
 
-### 4. Additional Academic Years & Dismissal Tracking
-- Dynamically computes required extension years caused by prerequisite chains and credit bottlenecks.
-- Alerts the student when entering a 5th year and automatically triggers an **Academic Dismissal** status if degree completion exceeds the 6-year (12-semester) regulatory maximum.
+### 4. Formative Failure & Mandatory Retake Rules
+- Enforces retake enrollment in identical seasonal terms (Odd terms for Semester 1, Even terms for Semester 2) with highest registration priority.
 
-### 5. Flexible State Traversal & Rewind
-- Allows seamless backward navigation to earlier semesters to modify outcomes, with real-time recalculation of all downstream semester plans.
+### 5. Semester Credit Ceiling (30 ECTS Cap)
+- Enforces a regulatory maximum cap of **30 ECTS credits** per semester, rolling over excess credits to future terms.
 
-### 6. Course Dependency & Impact Inspection
-- Enables instant lookup for any course to evaluate its prerequisites, downstream dependent modules, and the chain of academic blocking if formative failure occurs.
+### 6. Dynamic Extra Years & Dismissal Tracking
+- Calculates academic extension years and triggers an **Academic Dismissal** alert if completion exceeds 6 regulatory years (12 semesters).
 
-### 7. Multi-Semester Transcript & Export
-- Generates a full descriptive transcript mapping every semester's enrolled courses and academic standings, with support for high-resolution image export.
+### 7. Upgraded Quick Look & Optimized Mobile UI
+- Enhanced card structures with vertical text protection and compact badge positioning for optimal mobile readability.
+
+### 8. Transcript Generation & Image Export
+- Generates descriptive multi-semester academic records exportable as high-resolution images.
 
 ---
 
 ## 👨‍💻 إعداد وتطوير (Development)
 
 - **إعداد وتطوير:** مصطفى أحمد غفور (Mustafa A. Ghafour)
-- **الجهة:** قسم علوم الحاسوب - كلية العلوم - جامعة بغداد

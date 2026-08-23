@@ -118,6 +118,67 @@ function getDirectDependents(courseCode) {
 }
 
 /**
+ * Dynamically determines whether a dependent course (depCode) can be registered
+ * on its original curriculum schedule (dep.sem) when targetCode is failed / unpassed.
+ * Uses the exact simulation rules of the Bologna Process engine.
+ */
+function canModuleBeRegisteredOnTime(targetCode, depCode, customBaseSem = null) {
+    const target = curriculumMap[targetCode];
+    const dep = curriculumMap[depCode];
+    if (!target || !dep) return false;
+
+    const targetSem = customBaseSem || target.sem;
+    const depSem = dep.sem;
+
+    if (depSem <= targetSem + 1) return false;
+
+    const simPassed = {};
+
+    if (typeof simulationState !== 'undefined' && simulationState.passedModules) {
+        for (let code in simulationState.passedModules) {
+            if (simulationState.passedModules[code] !== null && simulationState.passedModules[code] !== undefined) {
+                simPassed[code] = simulationState.passedModules[code];
+            }
+        }
+    }
+
+    curriculumData.forEach(c => {
+        if (c.sem < targetSem) {
+            if (simPassed[c.code] === undefined) {
+                simPassed[c.code] = c.sem;
+            }
+        }
+    });
+
+    delete simPassed[targetCode];
+
+    const retakeSem = targetSem + 2;
+
+    for (let s = targetSem; s <= depSem; s++) {
+        if (s === retakeSem) {
+            simPassed[targetCode] = s;
+        }
+
+        curriculumData.forEach(m => {
+            if (m.sem === s && m.code !== targetCode) {
+                const prereqsSatisfied = m.prereq.every(pCode => {
+                    const passSem = simPassed[pCode];
+                    return passSem !== undefined && passSem !== null && passSem < s;
+                });
+
+                if (prereqsSatisfied) {
+                    if (simPassed[m.code] === undefined) {
+                        simPassed[m.code] = s;
+                    }
+                }
+            }
+        });
+    }
+
+    return simPassed[depCode] === depSem;
+}
+
+/**
  * Mathematically analyzes whether delaying/skipping an available candidate module in activeSem
  * will force the student into a 6th academic year (Semester 11+ / Year 6)
  * or exceed the maximum 6 years limit (Semester 12+) leading to dismissal (ترقين قيد).
@@ -721,7 +782,7 @@ function renderRegisteredGrid() {
                     const listHTML = laterSemDirect.map(dep => {
                         const stageName = getStageName(Math.ceil(dep.sem / 2));
                         const courseName = getCourseName(dep.sem);
-                        const canRegisterOnTime = dep.sem > course.sem + 2;
+                        const canRegisterOnTime = canModuleBeRegisteredOnTime(course.code, dep.code);
                         const statusBadge = canRegisterOnTime
                             ? `<span class="sim-dep-badge badge-ontime-yes">✅ بموعدها</span>`
                             : `<span class="sim-dep-badge badge-ontime-no">❌ تتأجّل</span>`;
@@ -986,7 +1047,7 @@ function renderRegistrationPanels(panelsData, activeSem) {
                     const listHTML = laterSemDirect.map(dep => {
                         const stageName = getStageName(Math.ceil(dep.sem / 2));
                         const courseName = getCourseName(dep.sem);
-                        const canRegisterOnTime = dep.sem > mod.origSem + 2;
+                        const canRegisterOnTime = canModuleBeRegisteredOnTime(mod.code, dep.code, mod.origSem);
                         const statusBadge = canRegisterOnTime
                             ? `<span class="sim-dep-badge badge-ontime-yes">✅ بموعدها</span>`
                             : `<span class="sim-dep-badge badge-ontime-no">❌ تتأجّل</span>`;
@@ -1015,7 +1076,7 @@ function renderRegistrationPanels(panelsData, activeSem) {
                 if (indirectDependents.length > 0) {
                     const listHTML = indirectDependents.map(dep => {
                         const fullSemInfo = getFullStageAndCourseName(dep.sem);
-                        const canRegisterOnTime = dep.sem > mod.origSem + 2;
+                        const canRegisterOnTime = canModuleBeRegisteredOnTime(mod.code, dep.code, mod.origSem);
                         const statusBadge = canRegisterOnTime
                             ? `<span class="sim-dep-badge badge-ontime-yes">✅ بموعدها</span>`
                             : `<span class="sim-dep-badge badge-ontime-no">❌ تتأجّل</span>`;
@@ -1904,7 +1965,7 @@ function renderQuickLookResults() {
                 const depStage = Math.ceil(dep.sem / 2);
                 const depStageName = getStageName(depStage);
                 const depCourse = getCourseName(dep.sem);
-                const canRegisterOnTime = dep.sem > subject.sem + 2;
+                const canRegisterOnTime = canModuleBeRegisteredOnTime(subject.code, dep.code);
                 return `
                     <div class="ql-dep-item-card">
                         <div class="ql-dep-item-top">
@@ -2028,7 +2089,7 @@ function renderQuickLookResults() {
                 const lastStageName = getStageName(lastStage);
                 const lastCourse = getCourseName(lastDep.sem);
                 const isImmediateNext = (firstDep.sem === subject.sem + 1);
-                const canRegisterOnTime = firstDep.sem > subject.sem + 2;
+                const canRegisterOnTime = canModuleBeRegisteredOnTime(subject.code, firstDep.code);
 
                 const timingBadge = isImmediateNext
                     ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`
@@ -2474,7 +2535,7 @@ function openSimChainsModal(subjectCode) {
         const depStageName = getStageName(depStage);
         const depCourse = getCourseName(dep.sem);
         const isImmediateNext = (dep.sem === subject.sem + 1);
-        const canRegisterOnTime = dep.sem > subject.sem + 2;
+        const canRegisterOnTime = canModuleBeRegisteredOnTime(subjectCode, dep.code);
 
         const timingBadge = isImmediateNext
             ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ حرمان فوري</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`
@@ -2518,7 +2579,7 @@ function openSimChainsModal(subjectCode) {
             const lastStageName = getStageName(lastStage);
             const lastCourse = getCourseName(lastDep.sem);
             const isImmediateNext = (firstDep.sem === subject.sem + 1);
-            const canRegisterOnTime = firstDep.sem > subject.sem + 2;
+            const canRegisterOnTime = canModuleBeRegisteredOnTime(subjectCode, firstDep.code);
 
             const timingBadge = isImmediateNext
                 ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`

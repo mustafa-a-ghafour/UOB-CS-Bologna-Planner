@@ -122,28 +122,39 @@ function getDirectDependents(courseCode) {
  * on its original curriculum schedule (dep.sem) when targetCode is failed / unpassed.
  * Uses the exact simulation rules of the Bologna Process engine.
  */
-function canModuleBeRegisteredOnTime(targetCode, depCode, customBaseSem = null) {
+function checkModuleRegistrationOnTime(targetCode, depCode, customBaseSem = null, isSimulation = false) {
     const target = curriculumMap[targetCode];
     const dep = curriculumMap[depCode];
-    if (!target || !dep) return false;
+    if (!target || !dep) return { canRegisterOnTime: false, blockingModule: null, affectedModule: null };
 
     const targetSem = customBaseSem || target.sem;
     const depSem = dep.sem;
 
-    if (depSem <= targetSem + 1) return false;
+    if (depSem <= targetSem + 1) return { canRegisterOnTime: false, blockingModule: null, affectedModule: null };
 
     const simPassed = {};
+    const unpassedFormativeModules = [];
 
-    if (typeof simulationState !== 'undefined' && simulationState.passedModules) {
+    if (isSimulation && typeof simulationState !== 'undefined' && simulationState.passedModules) {
         for (let code in simulationState.passedModules) {
             if (simulationState.passedModules[code] !== null && simulationState.passedModules[code] !== undefined) {
                 simPassed[code] = simulationState.passedModules[code];
             }
         }
+        curriculumData.forEach(c => {
+            if (c.sem <= targetSem && c.code !== targetCode) {
+                if (simPassed[c.code] === undefined || simPassed[c.code] === null) {
+                    unpassedFormativeModules.push(c);
+                }
+            }
+        });
     }
 
+    // Identify all downstream dependents of targetCode
+    const downstreamSet = new Set(getDownstreamDependencies(targetCode).map(c => c.code));
+
     curriculumData.forEach(c => {
-        if (c.sem < targetSem) {
+        if (c.code !== targetCode && !downstreamSet.has(c.code) && !unpassedFormativeModules.some(u => u.code === c.code)) {
             if (simPassed[c.code] === undefined) {
                 simPassed[c.code] = c.sem;
             }
@@ -159,23 +170,81 @@ function canModuleBeRegisteredOnTime(targetCode, depCode, customBaseSem = null) 
             simPassed[targetCode] = s;
         }
 
-        curriculumData.forEach(m => {
-            if (m.sem === s && m.code !== targetCode) {
-                const prereqsSatisfied = m.prereq.every(pCode => {
-                    const passSem = simPassed[pCode];
-                    return passSem !== undefined && passSem !== null && passSem < s;
-                });
-
-                if (prereqsSatisfied) {
-                    if (simPassed[m.code] === undefined) {
-                        simPassed[m.code] = s;
+        if (isSimulation) {
+            unpassedFormativeModules.forEach(u => {
+                const uRetakeSem = u.sem + 2;
+                if (s >= uRetakeSem && s % 2 === u.sem % 2) {
+                    const prereqsMet = u.prereq.every(pCode => {
+                        const passSem = simPassed[pCode];
+                        return passSem !== undefined && passSem !== null && passSem < s;
+                    });
+                    if (prereqsMet && simPassed[u.code] === undefined) {
+                        simPassed[u.code] = s;
                     }
                 }
-            }
-        });
+            });
+        }
+
+        let changed = true;
+        while (changed) {
+            changed = false;
+            curriculumData.forEach(m => {
+                if (m.code !== targetCode) {
+                    if (s >= m.sem && m.sem % 2 === s % 2) {
+                        const prereqsSatisfied = m.prereq.every(pCode => {
+                            const passSem = simPassed[pCode];
+                            return passSem !== undefined && passSem !== null && passSem < s;
+                        });
+
+                        if (prereqsSatisfied) {
+                            if (simPassed[m.code] === undefined || simPassed[m.code] > s) {
+                                simPassed[m.code] = s;
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+            });
+        }
     }
 
-    return simPassed[depCode] === depSem;
+    const canRegisterOnTime = (simPassed[depCode] === depSem);
+
+    if (canRegisterOnTime || !isSimulation) {
+        return { canRegisterOnTime: canRegisterOnTime, blockingModule: null, affectedModule: null };
+    }
+
+    function findUnsatisfiedPrereq(modCode) {
+        const mod = curriculumMap[modCode];
+        if (!mod) return null;
+        for (let pCode of mod.prereq) {
+            const passSem = simPassed[pCode];
+            if (passSem === undefined || passSem === null || passSem >= mod.sem) {
+                const isFormativeFail = unpassedFormativeModules.some(u => u.code === pCode);
+                if (isFormativeFail) {
+                    return {
+                        blockingModule: curriculumMap[pCode],
+                        affectedModule: mod
+                    };
+                }
+                const upstreamBlocker = findUnsatisfiedPrereq(pCode);
+                if (upstreamBlocker) return upstreamBlocker;
+            }
+        }
+        return null;
+    }
+
+    const blockerInfo = findUnsatisfiedPrereq(depCode);
+
+    return {
+        canRegisterOnTime: false,
+        blockingModule: blockerInfo ? blockerInfo.blockingModule : null,
+        affectedModule: blockerInfo ? blockerInfo.affectedModule : null
+    };
+}
+
+function canModuleBeRegisteredOnTime(targetCode, depCode, customBaseSem = null) {
+    return checkModuleRegistrationOnTime(targetCode, depCode, customBaseSem, false).canRegisterOnTime;
 }
 
 /**
@@ -2001,11 +2070,11 @@ function renderQuickLookResults() {
 
         // Indirect dependents cards
         let indirectListHTML = '';
-        if (indirectDependents.length > 0) {
             indirectListHTML = indirectDependents.map(dep => {
                 const depStage = Math.ceil(dep.sem / 2);
                 const depStageName = getStageName(depStage);
                 const depCourse = getCourseName(dep.sem);
+                const canRegisterOnTime = canModuleBeRegisteredOnTime(subject.code, dep.code);
                 return `
                     <div class="ql-dep-item-card">
                         <div class="ql-dep-item-top">
@@ -2014,12 +2083,18 @@ function renderQuickLookResults() {
                         </div>
                         <div class="ql-dep-item-bottom">
                             <span class="ql-dep-item-stage">${depStageName} • ${depCourse}</span>
-                            <span class="ql-dep-tag tag-indirect-block">⛓️ حرمان متسلسل</span>
+                            <div class="ql-dep-tags-group">
+                                <span class="ql-dep-tag tag-indirect-block">⛓️ حرمان متسلسل</span>
+                                ${canRegisterOnTime ? `
+                                    <span class="ql-dep-tag tag-ontime-yes">✅ بموعدها</span>
+                                ` : `
+                                    <span class="ql-dep-tag tag-ontime-no">❌ تتأجّل</span>
+                                `}
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
-        }
 
         // Build direct & indirect chain paths in a dedicated standalone card box
         let chainBoxHTML = '';
@@ -2089,19 +2164,24 @@ function renderQuickLookResults() {
                 const lastStageName = getStageName(lastStage);
                 const lastCourse = getCourseName(lastDep.sem);
                 const isImmediateNext = (firstDep.sem === subject.sem + 1);
-                const canRegisterOnTime = canModuleBeRegisteredOnTime(subject.code, firstDep.code);
+                const checkRes = checkModuleRegistrationOnTime(subject.code, lastDep.code);
+                const targetCanRegisterOnTime = checkRes.canRegisterOnTime;
+                const blockingModule = checkRes.blockingModule;
+                const affectedModule = checkRes.affectedModule;
 
                 const timingBadge = isImmediateNext
-                    ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`
-                    : canRegisterOnTime
-                    ? `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>`
-                    : `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`;
+                    ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري</span> ${targetCanRegisterOnTime ? '<span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>' : '<span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>'}`
+                    : `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span> ${targetCanRegisterOnTime ? '<span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>' : '<span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>'}`;
 
-                const noteFooter = isImmediateNext
-                    ? `<div class="ql-chain-note-footer note-danger"><div class="ql-chain-note-title">🚨 سلسلة حرمان حرجة:</div><div class="ql-chain-note-text">تبدأ بحرمان فوري من (${firstDep.nameAr}) وتسبب تأخيراً متسلسلاً يمتد إلى (${lastDep.nameAr}).</div></div>`
-                    : canRegisterOnTime
-                    ? `<div class="ql-chain-note-footer note-success"><div class="ql-chain-note-title">✅ سلسلة آمنة:</div><div class="ql-chain-note-text">إعادة (${subject.nameAr}) والنجاح التكويني فيها العام القادم يضمن حماية السلسلة وتسجيل كافة المواد حتى (${lastDep.nameAr}) بمواعيدها.</div></div>`
-                    : `<div class="ql-chain-note-footer note-warning"><div class="ql-chain-note-title">⚠️ تأثير تراكمي:</div><div class="ql-chain-note-text">تزامن إعادة (${subject.nameAr}) مع بداية السلسلة (${firstDep.nameAr}) يؤدي لإزاحة المسار بأكمله حتى (${lastDep.nameAr}).</div></div>`;
+                const blockingReasonText = (blockingModule && affectedModule && affectedModule.code !== lastDep.code)
+                    ? `وجود رسوب تكويني بمادة أخرى وهي (${blockingModule.nameAr}) المرتبطة بمادة (${affectedModule.nameAr}) سيمنع تسجيل مادة (${lastDep.nameAr}) في موعدها.`
+                    : blockingModule
+                    ? `وجود رسوب تكويني بمادة أخرى وهي (${blockingModule.nameAr}) سيمنع تسجيل مادة (${lastDep.nameAr}) في موعدها.`
+                    : `تبدأ بحرمان من (${firstDep.nameAr}) وتسبب تأخيراً متسلسلاً يمتد ويؤدي لتأجيل تسجيل مادة (${lastDep.nameAr}) عن موعدها الأصلي.`;
+
+                const noteFooter = targetCanRegisterOnTime
+                    ? `<div class="ql-chain-note-footer note-success"><div class="ql-chain-note-title">✅ مسار آمن:</div><div class="ql-chain-note-text">${isImmediateNext ? `تبدأ بتأجيل المادة المباشرة (${firstDep.nameAr}) في الكورس القادم، ولكن ` : ''}إعادة (${subject.nameAr}) والنجاح فيها تضمن استكمال المسار وتسجيل مادة (${lastDep.nameAr}) بموعدها الأصلي.</div></div>`
+                    : `<div class="ql-chain-note-footer note-danger"><div class="ql-chain-note-title">${blockingModule ? '🚨 تأخير بسبب مادة أخرى:' : '🚨 سلسلة حرمان حرجة:'}</div><div class="ql-chain-note-text">${blockingReasonText}</div></div>`;
 
                 const nodesHTML = path.map((item, idx) => {
                     const nodeName = item.nameAr;
@@ -2535,7 +2615,10 @@ function openSimChainsModal(subjectCode) {
         const depStageName = getStageName(depStage);
         const depCourse = getCourseName(dep.sem);
         const isImmediateNext = (dep.sem === subject.sem + 1);
-        const canRegisterOnTime = canModuleBeRegisteredOnTime(subjectCode, dep.code);
+        const checkResDirect = checkModuleRegistrationOnTime(subjectCode, dep.code);
+        const canRegisterOnTime = checkResDirect.canRegisterOnTime;
+        const blockingModuleDirect = checkResDirect.blockingModule;
+        const affectedModuleDirect = checkResDirect.affectedModule;
 
         const timingBadge = isImmediateNext
             ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ حرمان فوري</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`
@@ -2543,11 +2626,17 @@ function openSimChainsModal(subjectCode) {
             ? `<span class="ql-chain-timing-badge badge-timing-later">📅 حرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>`
             : `<span class="ql-chain-timing-badge badge-timing-later">📅 حرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`;
 
+        const directBlockingReasonText = (blockingModuleDirect && affectedModuleDirect && affectedModuleDirect.code !== dep.code)
+            ? `وجود رسوب تكويني بمادة أخرى وهي (${blockingModuleDirect.nameAr}) المرتبطة بمادة (${affectedModuleDirect.nameAr}) سيمنع تسجيل مادة (${dep.nameAr}) في موعدها.`
+            : blockingModuleDirect
+            ? `وجود رسوب تكويني بمادة أخرى وهي (${blockingModuleDirect.nameAr}) سيمنع تسجيل مادة (${dep.nameAr}) في موعدها.`
+            : `موعد (${dep.nameAr}) يتزامن مع إعادة (${subject.nameAr}) العام القادم، مما يمنع تسجيلها بموعدها.`;
+
         const noteFooter = isImmediateNext
             ? `<div class="ql-chain-note-footer note-danger"><div class="ql-chain-note-title">🚨 تأثير مباشر:</div><div class="ql-chain-note-text">يتطلب تسجيل (${dep.nameAr}) النجاح في (${subject.nameAr}) أولاً، وبسبب الرسوب لن يُسمح بتسجيلها في الكورس القادم.</div></div>`
             : canRegisterOnTime
             ? `<div class="ql-chain-note-footer note-success"><div class="ql-chain-note-title">✅ إمكانية التسجيل:</div><div class="ql-chain-note-text">إعادة (${subject.nameAr}) والنجاح التكويني فيها العام القادم تضمن تسجيل (${dep.nameAr}) بموعدها دون تأخير.</div></div>`
-            : `<div class="ql-chain-note-footer note-warning"><div class="ql-chain-note-title">⚠️ تزامن الإعادة:</div><div class="ql-chain-note-text">موعد (${dep.nameAr}) يتزامن مع إعادة (${subject.nameAr}) العام القادم، مما يمنع تسجيلها بموعدها.</div></div>`;
+            : `<div class="ql-chain-note-footer note-danger"><div class="ql-chain-note-title">${blockingModuleDirect ? '🚨 تأخير بسبب مادة أخرى:' : '⚠️ تزامن الإعادة:'}</div><div class="ql-chain-note-text">${directBlockingReasonText}</div></div>`;
 
         return `
             <div class="ql-chain-flow-item">
@@ -2579,19 +2668,24 @@ function openSimChainsModal(subjectCode) {
             const lastStageName = getStageName(lastStage);
             const lastCourse = getCourseName(lastDep.sem);
             const isImmediateNext = (firstDep.sem === subject.sem + 1);
-            const canRegisterOnTime = canModuleBeRegisteredOnTime(subjectCode, firstDep.code);
+            const checkRes = checkModuleRegistrationOnTime(subjectCode, lastDep.code);
+            const targetCanRegisterOnTime = checkRes.canRegisterOnTime;
+            const blockingModule = checkRes.blockingModule;
+            const affectedModule = checkRes.affectedModule;
 
             const timingBadge = isImmediateNext
-                ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`
-                : canRegisterOnTime
-                ? `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>`
-                : `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span> <span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>`;
+                ? `<span class="ql-chain-timing-badge badge-timing-next">⚡ يبدأ بحرمان فوري</span> ${targetCanRegisterOnTime ? '<span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>' : '<span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>'}`
+                : `<span class="ql-chain-timing-badge badge-timing-later">📅 يبدأ بحرمان من كورس لاحق</span> ${targetCanRegisterOnTime ? '<span class="ql-chain-timing-badge badge-ontime-yes">✅ بموعدها</span>' : '<span class="ql-chain-timing-badge badge-ontime-no">❌ تتأجّل</span>'}`;
 
-            const noteFooter = isImmediateNext
-                ? `<div class="ql-chain-note-footer note-danger"><div class="ql-chain-note-title">🚨 سلسلة حرمان حرجة:</div><div class="ql-chain-note-text">تبدأ بحرمان فوري من (${firstDep.nameAr}) وتسبب تأخيراً متسلسلاً يمتد إلى (${lastDep.nameAr}).</div></div>`
-                : canRegisterOnTime
-                ? `<div class="ql-chain-note-footer note-success"><div class="ql-chain-note-title">✅ سلسلة آمنة:</div><div class="ql-chain-note-text">إعادة (${subject.nameAr}) والنجاح التكويني فيها العام القادم يضمن حماية السلسلة وتسجيل كافة المواد حتى (${lastDep.nameAr}) بمواعيدها.</div></div>`
-                : `<div class="ql-chain-note-footer note-warning"><div class="ql-chain-note-title">⚠️ تأثير تراكمي:</div><div class="ql-chain-note-text">تزامن إعادة (${subject.nameAr}) مع بداية السلسلة (${firstDep.nameAr}) تؤدي لإزاحة المسار بأكمله حتى (${lastDep.nameAr}).</div></div>`;
+            const blockingReasonText = (blockingModule && affectedModule && affectedModule.code !== lastDep.code)
+                ? `وجود رسوب تكويني بمادة أخرى وهي (${blockingModule.nameAr}) المرتبطة بمادة (${affectedModule.nameAr}) سيمنع تسجيل مادة (${lastDep.nameAr}) في موعدها.`
+                : blockingModule
+                ? `وجود رسوب تكويني بمادة أخرى وهي (${blockingModule.nameAr}) سيمنع تسجيل مادة (${lastDep.nameAr}) في موعدها.`
+                : `تبدأ بحرمان من (${firstDep.nameAr}) وتسبب تأخيراً متسلسلاً يمتد ويؤدي لتأجيل تسجيل مادة (${lastDep.nameAr}) عن موعدها الأصلي.`;
+
+            const noteFooter = targetCanRegisterOnTime
+                ? `<div class="ql-chain-note-footer note-success"><div class="ql-chain-note-title">✅ مسار آمن:</div><div class="ql-chain-note-text">${isImmediateNext ? `تبدأ بتأجيل المادة المباشرة (${firstDep.nameAr}) في الكورس القادم، ولكن ` : ''}إعادة (${subject.nameAr}) والنجاح فيها تضمن استكمال المسار وتسجيل مادة (${lastDep.nameAr}) بموعدها الأصلي.</div></div>`
+                : `<div class="ql-chain-note-footer note-danger"><div class="ql-chain-note-title">${blockingModule ? '🚨 تأخير بسبب مادة أخرى:' : '🚨 سلسلة حرمان حرجة:'}</div><div class="ql-chain-note-text">${blockingReasonText}</div></div>`;
 
             const nodesHTML = path.map((item, idx) => {
                 const nodeName = item.nameAr;

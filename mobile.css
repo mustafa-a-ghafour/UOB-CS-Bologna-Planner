@@ -214,6 +214,25 @@
         padding: 0.6rem 1rem;
     }
 
+    .fees-calculator-screen-card {
+        padding: 1.25rem 0.95rem;
+        gap: 1.15rem;
+    }
+
+    .fees-selectors-top-row {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .fees-formula-calculation {
+        font-size: 0.9rem;
+        padding: 0.45rem 0.7rem;
+    }
+
+    .fees-total-number {
+        font-size: 2.1rem;
+    }
+
     .quick-look-header-bar {
         flex-direction: column;
         align-items: stretch;

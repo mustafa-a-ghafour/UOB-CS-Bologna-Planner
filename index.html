@@ -299,6 +299,50 @@
                         </div>
                     </div>
 
+                    <!-- Bento Card 3: Fees Calculator Mode -->
+                    <div class="bento-card bento-fees-card">
+                        <div class="bento-card-glow glow-fees"></div>
+                        <div class="bento-card-header">
+                            <div class="bento-icon-box icon-fees">
+                                <span>💰</span>
+                            </div>
+                            <div class="bento-title-group">
+                                <span class="bento-sub-badge badge-fees">احتساب الرسوم</span>
+                                <h2 class="bento-card-title">حاسبة أجور المحاولتين الأمتحانيتين الإضافيتين</h2>
+                            </div>
+                        </div>
+
+                        <p class="bento-card-desc">
+                            احسب الرسوم المالية المقررة للمحاولتين الإضافيتين لكل مادة دراسية وفق ضوابط مسار بولونيا ونوع الدراسة.
+                        </p>
+
+                        <div class="bento-chips-list">
+                            <div class="bento-chip">
+                                <span class="chip-icon">⚡</span>
+                                <span>حساب فوري حسب نوع الدراسة</span>
+                            </div>
+                            <div class="bento-chip">
+                                <span class="chip-icon">📘</span>
+                                <span>حساب بحسب المعتمد في دليل مسار بولونيا</span>
+                            </div>
+                            <div class="bento-chip">
+                                <span class="chip-icon">📐</span>
+                                <span>بيان لمعادلة الحساب</span>
+                            </div>
+                        </div>
+
+                        <div class="bento-action-wrapper">
+                            <button id="btnOpenFeesCalc" class="btn-bento-action btn-bento-fees" type="button">
+                                <span class="btn-content">
+                                    <span class="btn-icon">💰</span>
+                                    <span class="btn-text">فتح حاسبة الأجور</span>
+                                </span>
+                                <span class="btn-arrow-icon">←</span>
+                                <span class="btn-shine-sweep"></span>
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </section>
@@ -370,6 +414,80 @@
 
             <!-- Results View Area -->
             <div id="quickLookResultsArea" class="quick-look-results-area">
+                <!-- Dynamically populated by JS -->
+            </div>
+        </section>
+
+        <!-- Fees Calculator Screen (حاسبة أجور المحاولتين الإضافيتين لكل مادة) -->
+        <section id="feesCalculatorScreen" class="fees-calculator-screen-card" style="display: none;">
+            <div class="quick-look-header-bar fees-header-bar">
+                <div class="quick-look-title-group">
+                    <div class="quick-look-badge badge-fees-header">
+                        <span class="badge-dot"></span>
+                        <span>أجور المحاولتين الامتحانيتين الإضافيتين • مسار بولونيا</span>
+                    </div>
+                    <h2 class="quick-look-title">💰 حاسبة أجور المحاولتين الأمتحانيتين الإضافيتين</h2>
+                    <p class="quick-look-subtitle">
+                        اختر نوع الدراسة والمرحلة والكورس والمادة لاحتساب الرسوم المالية المقررة للمحاولتين الامتحانيتين الإضافيتين فورياً.
+                    </p>
+                </div>
+                <button id="btnBackFromFeesCalc" class="btn-back-home" type="button">
+                    <span>🔙 العودة للرئيسية</span>
+                </button>
+            </div>
+
+            <!-- Selectors Filter Card -->
+            <div class="quick-look-selectors-box fees-selectors-box">
+                <div class="fees-selectors-top-row">
+                    <div class="selector-field">
+                        <label for="feesStudyTypeSelect">🏛️ نوع الدراسة:</label>
+                        <div class="custom-select-wrapper">
+                            <select id="feesStudyTypeSelect" class="ql-select-input">
+                                <option value="morning" selected>صباحي (عام)</option>
+                                <option value="morning_parallel">صباحي (خاص / موازي)</option>
+                                <option value="evening">مسائي</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="selector-field">
+                        <label for="feesStageSelect">🎓 المرحلة الدراسية:</label>
+                        <div class="custom-select-wrapper">
+                            <select id="feesStageSelect" class="ql-select-input">
+                                <option value="" disabled selected>اختر المرحلة</option>
+                                <option value="1">المرحلة الأولى</option>
+                                <option value="2">المرحلة الثانية</option>
+                                <option value="3">المرحلة الثالثة</option>
+                                <option value="4">المرحلة الرابعة</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="selector-field">
+                        <label for="feesCourseSelect">📘 الكورس:</label>
+                        <div class="custom-select-wrapper">
+                            <select id="feesCourseSelect" class="ql-select-input">
+                                <option value="" disabled selected>اختر الكورس</option>
+                                <option value="1">الكورس الأول</option>
+                                <option value="2">الكورس الثاني</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="selector-field subject-field-full">
+                    <label for="feesSubjectSelect">📚 اختر المادة الدراسية:</label>
+                    <div class="custom-select-wrapper">
+                        <select id="feesSubjectSelect" class="ql-select-input ql-select-subject fees-select-subject">
+                            <option value="" disabled selected>اختر المادة</option>
+                            <!-- Dynamically filled -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results View Area -->
+            <div id="feesResultsArea" class="fees-results-area">
                 <!-- Dynamically populated by JS -->
             </div>
         </section>

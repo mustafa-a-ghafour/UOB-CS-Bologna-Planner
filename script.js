@@ -1717,12 +1717,18 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
 // 4. Welcome Screen & Main Workspace Controls
 // --------------------------------------------------------------------------
 // Helper to generate clean, server-safe SPA URLs without 404 Cannot GET errors
-function getAppPath(screen, subjectCode = '') {
+function getAppPath(screen, subjectCode = '', studyType = '') {
     if (screen === 'workspace' || screen === 'simulation') {
         return '?simulation';
     }
     if (screen === 'quick-look') {
         return subjectCode ? `?quick-look&subject=${subjectCode}` : '?quick-look';
+    }
+    if (screen === 'fees-calc') {
+        let p = '?fees-calc';
+        if (studyType) p += `&type=${studyType}`;
+        if (subjectCode) p += `&subject=${subjectCode}`;
+        return p;
     }
     const isHttp = window.location.protocol.startsWith('http');
     if (isHttp && window.location.pathname.endsWith('/index.html')) {
@@ -1739,12 +1745,14 @@ function startSimulation(pushState = true) {
     const mainWS = document.getElementById('mainWorkspace');
     const appHeader = document.getElementById('appHeader');
     const topSlimStrip = document.getElementById('topSlimStrip');
+    const feesScreen = document.getElementById('feesCalculatorScreen');
 
     if (welcome && mainWS) {
         // Reset simulation to zero (clean fresh start)
         initSimulation();
 
         if (qlScreen) qlScreen.style.display = 'none';
+        if (feesScreen) feesScreen.style.display = 'none';
         welcome.style.display = 'none';
         if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
         mainWS.style.display = 'flex';
@@ -1763,6 +1771,7 @@ function showWelcomeScreen(pushState = true) {
     const welcome = document.getElementById('welcomeScreen');
     const welcomeTopHeader = document.getElementById('welcomeTopHeader');
     const qlScreen = document.getElementById('quickLookScreen');
+    const feesScreen = document.getElementById('feesCalculatorScreen');
     const mainWS = document.getElementById('mainWorkspace');
     const appHeader = document.getElementById('appHeader');
     const topSlimStrip = document.getElementById('topSlimStrip');
@@ -1772,6 +1781,7 @@ function showWelcomeScreen(pushState = true) {
         initSimulation();
 
         if (qlScreen) qlScreen.style.display = 'none';
+        if (feesScreen) feesScreen.style.display = 'none';
         welcome.style.display = 'flex';
         welcome.style.opacity = '1';
         welcome.style.transform = 'translateY(0)';
@@ -1822,12 +1832,14 @@ function openQuickLookScreen(pushState = true) {
     const welcome = document.getElementById('welcomeScreen');
     const welcomeTopHeader = document.getElementById('welcomeTopHeader');
     const qlScreen = document.getElementById('quickLookScreen');
+    const feesScreen = document.getElementById('feesCalculatorScreen');
     const mainWS = document.getElementById('mainWorkspace');
     const appHeader = document.getElementById('appHeader');
     const topSlimStrip = document.getElementById('topSlimStrip');
 
     if (welcome && qlScreen) {
         welcome.style.display = 'none';
+        if (feesScreen) feesScreen.style.display = 'none';
         if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
         if (mainWS) mainWS.style.display = 'none';
         if (appHeader) appHeader.style.display = 'none';
@@ -2408,6 +2420,314 @@ function renderQuickLookResults() {
 }
 
 // --------------------------------------------------------------------------
+// 4.6 Fees Calculator (أداة احتساب أجور المحاولتين الإضافيتين) Feature Engine
+// --------------------------------------------------------------------------
+function loadFeesSubjectByCode(code, studyType = 'morning') {
+    const subject = curriculumMap[code];
+    if (!subject) return;
+
+    if (studyType === 'morning_free') studyType = 'morning';
+
+    const studySelect = document.getElementById('feesStudyTypeSelect');
+    const stageSelect = document.getElementById('feesStageSelect');
+    const courseSelect = document.getElementById('feesCourseSelect');
+    const subjectSelect = document.getElementById('feesSubjectSelect');
+
+    if (stageSelect && courseSelect && subjectSelect) {
+        if (studySelect && studyType) {
+            studySelect.value = studyType;
+        }
+
+        const stageNum = Math.ceil(subject.sem / 2);
+        const courseNum = (subject.sem % 2 !== 0) ? 1 : 2;
+
+        stageSelect.value = stageNum.toString();
+        courseSelect.value = courseNum.toString();
+
+        populateFeesSubjects();
+
+        subjectSelect.value = subject.code;
+        calculateAndRenderFees();
+    }
+}
+
+function openFeesCalculatorScreen(pushState = true) {
+    const shouldPush = typeof pushState === 'boolean' ? pushState : true;
+    const welcome = document.getElementById('welcomeScreen');
+    const welcomeTopHeader = document.getElementById('welcomeTopHeader');
+    const qlScreen = document.getElementById('quickLookScreen');
+    const feesScreen = document.getElementById('feesCalculatorScreen');
+    const mainWS = document.getElementById('mainWorkspace');
+    const appHeader = document.getElementById('appHeader');
+    const topSlimStrip = document.getElementById('topSlimStrip');
+
+    if (feesScreen) {
+        if (welcome) welcome.style.display = 'none';
+        if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
+        if (qlScreen) qlScreen.style.display = 'none';
+        if (mainWS) mainWS.style.display = 'none';
+        if (appHeader) appHeader.style.display = 'none';
+        if (topSlimStrip) topSlimStrip.style.display = 'none';
+
+        feesScreen.style.display = 'flex';
+        feesScreen.style.animation = 'fadeIn 0.35s ease-out';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        const urlStr = window.location.href;
+        const match = urlStr.match(/[?&#]subject=([A-Za-z0-9]+)/) || urlStr.match(/[?&#]code=([A-Za-z0-9]+)/);
+        const typeMatch = urlStr.match(/[?&#]type=([A-Za-z0-9_]+)/);
+
+        if (match && match[1] && curriculumMap[match[1]] && (urlStr.includes('fees-calc') || urlStr.includes('screen=fees-calc'))) {
+            let sType = typeMatch ? typeMatch[1] : 'morning';
+            if (sType === 'morning_free') sType = 'morning';
+            loadFeesSubjectByCode(match[1], sType);
+        } else {
+            const subjectSelect = document.getElementById('feesSubjectSelect');
+            if (!subjectSelect || !subjectSelect.value) {
+                const stageSelect = document.getElementById('feesStageSelect');
+                const courseSelect = document.getElementById('feesCourseSelect');
+                if (stageSelect) stageSelect.value = '';
+                if (courseSelect) courseSelect.value = '';
+                if (subjectSelect) subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+                populateFeesSubjects();
+            }
+        }
+
+        if (shouldPush) {
+            const subjectSelect = document.getElementById('feesSubjectSelect');
+            const subCode = subjectSelect ? subjectSelect.value : '';
+            const studySelect = document.getElementById('feesStudyTypeSelect');
+            const sType = studySelect && studySelect.value ? studySelect.value : 'morning';
+            history.pushState({ screen: 'fees-calc', subject: subCode, type: sType }, '', getAppPath('fees-calc', subCode, sType));
+        }
+    }
+}
+
+function closeFeesCalculatorScreen(pushState = true) {
+    showWelcomeScreen(pushState);
+}
+
+function populateFeesSubjects() {
+    const stageSelect = document.getElementById('feesStageSelect');
+    const courseSelect = document.getElementById('feesCourseSelect');
+    const subjectSelect = document.getElementById('feesSubjectSelect');
+    const resultsArea = document.getElementById('feesResultsArea');
+    if (!stageSelect || !courseSelect || !subjectSelect) return;
+
+    const stageVal = stageSelect.value;
+    const courseVal = courseSelect.value;
+
+    if (!stageVal || !courseVal) {
+        subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+        if (resultsArea) {
+            resultsArea.innerHTML = `
+                <div class="ql-empty-state-box">
+                    <span class="ql-empty-icon">💡</span>
+                    <p class="ql-empty-text">يرجى اختيار نوع الدراسة، والمرحلة والكورس، ثم المادة لاحتساب الأجور بدقة.</p>
+                </div>
+            `;
+        }
+        return;
+    }
+
+    const stageNum = parseInt(stageVal, 10);
+    const courseNum = parseInt(courseVal, 10);
+    const targetSem = (stageNum - 1) * 2 + courseNum;
+
+    const subjectsInSem = curriculumData.filter(c => c.sem === targetSem);
+    subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+
+    subjectsInSem.forEach((sub) => {
+        const opt = document.createElement('option');
+        opt.value = sub.code;
+        opt.textContent = sub.nameAr;
+        subjectSelect.appendChild(opt);
+    });
+
+    if (resultsArea) {
+        resultsArea.innerHTML = `
+            <div class="ql-empty-state-box">
+                <span class="ql-empty-icon">📚</span>
+                <p class="ql-empty-text">اختر الآن إحدى مواد الكورس من القائمة أعلاه لاحتساب أجورها.</p>
+            </div>
+        `;
+    }
+}
+
+function formatNumberIQD(num) {
+    return Number(num).toLocaleString('en-US');
+}
+
+function tafqeetIQD(num) {
+    const map = {
+        25000: 'خمسة وعشرون ألف دينار عراقي',
+        31250: 'واحد وثلاثون ألفاً ومائتان وخمسون دينار عراقي',
+        50000: 'خمسون ألف دينار عراقي',
+        62500: 'اثنان وستون ألفاً وخمسمائة دينار عراقي',
+        75000: 'خمسة وسبعون ألف دينار عراقي',
+        93750: 'ثلاثة وتسعون ألفاً وسبعمائة وخمسون دينار عراقي',
+        100000: 'مائة ألف دينار عراقي',
+        125000: 'مائة وخمسة وعشرون ألف دينار عراقي',
+        150000: 'مائة وخمسون ألف دينار عراقي',
+        156250: 'مائة وستة وخمسون ألفاً ومائتان وخمسون دينار عراقي',
+        175000: 'مائة وخمسة وسبعون ألف دينار عراقي',
+        187500: 'مائة وسبعة وثمانون ألفاً وخمسمائة دينار عراقي',
+        200000: 'مائتان ألف دينار عراقي',
+        218750: 'مائتان وثمانية عشر ألفاً وسبعمائة وخمسون دينار عراقي',
+        250000: 'مائتان وخمسون ألف دينار عراقي'
+    };
+    if (map[num]) return map[num];
+    return `${formatNumberIQD(num)} دينار عراقي`;
+}
+
+function calculateAndRenderFees() {
+    const subjectSelect = document.getElementById('feesSubjectSelect');
+    const resultsArea = document.getElementById('feesResultsArea');
+    if (!subjectSelect || !resultsArea) return;
+
+    const selectedCode = subjectSelect.value;
+    const subject = curriculumMap[selectedCode];
+    if (!subject) return;
+
+    const studySelect = document.getElementById('feesStudyTypeSelect');
+    let studyType = studySelect ? studySelect.value : 'morning';
+    if (studyType === 'morning_free') studyType = 'morning';
+
+    let studyTypeName = 'صباحي (عام)';
+    let isSpecial = false;
+
+    if (studyType === 'morning_parallel') {
+        studyTypeName = 'صباحي (خاص / موازي)';
+        isSpecial = true;
+    } else if (studyType === 'evening') {
+        studyTypeName = 'مسائي';
+        isSpecial = true;
+    }
+
+    const stageNum = Math.ceil(subject.sem / 2);
+    const stageName = getStageName(stageNum);
+    const courseTitle = getCourseName(subject.sem);
+    const fullOriginName = `${stageName} - ${courseTitle}`;
+
+    const ects = subject.ects;
+    // Formula for Morning Free: (ects / 60) * 1,500,000
+    const baseFee = Math.round((ects / 60) * 1500000);
+    // Extra 25% for Parallel and Evening:
+    const extra25 = isSpecial ? Math.round(baseFee * 0.25) : 0;
+    const totalFee = baseFee + extra25;
+
+    try {
+        history.replaceState({ screen: 'fees-calc', subject: selectedCode, type: studyType }, '', getAppPath('fees-calc', selectedCode, studyType));
+    } catch (e) {}
+
+    resultsArea.innerHTML = `
+        <div class="ql-target-card fees-target-card">
+            <div class="ql-target-header">
+                <div class="ql-target-title-block">
+                    <h3 class="ql-target-name-ar">${subject.nameAr}</h3>
+                    <span class="ql-target-name-en">${subject.nameEn}</span>
+                </div>
+                <div class="ql-target-action-block">
+                    <button type="button" class="btn-share-ql-icon" id="btnShareFeesSubject" title="نسخ رابط أجور المادة المباشر">
+                        <span>🔗</span>
+                    </button>
+                </div>
+            </div>
+            <div class="ql-target-meta-badges">
+                <span class="ql-pill-ects">${formatUnits(subject.ects)}</span>
+                <span class="ql-pill-stage">${fullOriginName}</span>
+                <span class="fees-pill-study">🏛️ ${studyTypeName}</span>
+            </div>
+        </div>
+
+        <div class="fees-grand-total-box">
+            <span class="fees-total-badge">💰 المبلغ الإجمالي المطلوب للمحاولتين الامتحانيتين الإضافيتين</span>
+            <div class="fees-total-number-row">
+                <span class="fees-total-number">${formatNumberIQD(totalFee)}</span>
+                <span class="fees-currency-symbol">دينار عراقي</span>
+            </div>
+            <div class="fees-tafqeet-text">
+                <span>(فقط ${tafqeetIQD(totalFee)} لا غير)</span>
+            </div>
+
+            <!-- Formula Box displaying only study type name and neat formula -->
+            <div class="fees-formula-card">
+                <div class="fees-formula-header">
+                    <span class="fees-formula-type-badge">${studyTypeName}</span>
+                </div>
+                <div class="fees-formula-body">
+                    <div class="fees-formula-row">
+                        <span class="fees-formula-label">المعادلة:</span>
+                        <div class="fees-formula-text" dir="rtl">
+                            ${isSpecial ? `
+                                <span class="fees-math-token">(عدد وحدات المادة / 60)</span>
+                                <span class="fees-math-op">×</span>
+                                <span class="fees-math-token">مليون ونصف</span>
+                                <span class="fees-math-op">=</span>
+                                <span class="fees-math-token">الناتج + 25%</span>
+                            ` : `
+                                <span class="fees-math-token">(عدد وحدات المادة / 60)</span>
+                                <span class="fees-math-op">×</span>
+                                <span class="fees-math-token">مليون ونصف</span>
+                            `}
+                        </div>
+                    </div>
+                    <div class="fees-formula-eval-box">
+                        <div class="fees-eval-top-row">
+                            <span class="fees-formula-label">التطبيق:</span>
+                            <span class="fees-eval-units-statement" dir="rtl">
+                                عدد وحدات المادة = <strong class="fees-units-val"><bdi>${ects}</bdi></strong>
+                            </span>
+                        </div>
+                        <div class="fees-eval-math-row">
+                            <div class="fees-formula-eval" dir="ltr">
+                                <span class="fees-eval-token">(${ects} / 60)</span>
+                                <span class="fees-math-op">×</span>
+                                <span class="fees-eval-token">1,500,000</span>
+                                ${isSpecial ? `
+                                    <span class="fees-math-op">=</span>
+                                    <span class="fees-eval-token">${formatNumberIQD(baseFee)}</span>
+                                    <span class="fees-math-op">+</span>
+                                    <span class="fees-eval-badge">25%</span>
+                                ` : ''}
+                                <span class="fees-math-op">=</span>
+                                <strong class="fees-calc-res-tag">
+                                    <span class="fees-res-num">${formatNumberIQD(totalFee)}</span>
+                                    <span class="fees-res-currency">د.ع</span>
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const btnShare = document.getElementById('btnShareFeesSubject');
+    if (btnShare) {
+        btnShare.addEventListener('click', async () => {
+            const originBase = `${window.location.origin}${window.location.pathname.replace(/\/index\.html$/, '')}`;
+            const cleanBase = originBase.endsWith('/') ? originBase.slice(0, -1) : originBase;
+            const shareUrl = window.location.protocol.startsWith('http')
+                ? `${cleanBase}/?fees-calc&type=${studyType}&subject=${subject.code}`
+                : `${window.location.href.split('?')[0].split('#')[0]}?fees-calc&type=${studyType}&subject=${subject.code}`;
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+            } catch (err) {
+                const tempInput = document.createElement('input');
+                tempInput.value = shareUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+            }
+
+            showAppToast('تم نسخ الرابط المباشر لأجور المادة');
+        });
+    }
+}
+
+// --------------------------------------------------------------------------
 // 5. Initializers & Events
 // --------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
@@ -2424,6 +2744,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnBackFromQuickLook = document.getElementById('btnBackFromQuickLook');
     if (btnBackFromQuickLook) {
         btnBackFromQuickLook.addEventListener('click', () => closeQuickLookScreen(true));
+    }
+
+    const btnOpenFees = document.getElementById('btnOpenFeesCalc');
+    if (btnOpenFees) {
+        btnOpenFees.addEventListener('click', openFeesCalculatorScreen);
+    }
+
+    const btnBackFees = document.getElementById('btnBackFromFeesCalc');
+    if (btnBackFees) {
+        btnBackFees.addEventListener('click', closeFeesCalculatorScreen);
     }
 
     const btnReturnHome = document.getElementById('btnReturnToHome');
@@ -2444,6 +2774,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const qlSubjectSelect = document.getElementById('qlSubjectSelect');
     if (qlSubjectSelect) {
         qlSubjectSelect.addEventListener('change', renderQuickLookResults);
+    }
+
+    const feesStudyTypeSelect = document.getElementById('feesStudyTypeSelect');
+    if (feesStudyTypeSelect) {
+        feesStudyTypeSelect.addEventListener('change', () => {
+            const subjectSelect = document.getElementById('feesSubjectSelect');
+            if (subjectSelect && subjectSelect.value) {
+                calculateAndRenderFees();
+            } else {
+                let sType = feesStudyTypeSelect.value || 'morning';
+                if (sType === 'morning_free') sType = 'morning';
+                try {
+                    history.replaceState({ screen: 'fees-calc', subject: '', type: sType }, '', getAppPath('fees-calc', '', sType));
+                } catch (e) {}
+            }
+        });
+    }
+
+    const feesStageSelect = document.getElementById('feesStageSelect');
+    if (feesStageSelect) {
+        feesStageSelect.addEventListener('change', populateFeesSubjects);
+    }
+
+    const feesCourseSelect = document.getElementById('feesCourseSelect');
+    if (feesCourseSelect) {
+        feesCourseSelect.addEventListener('change', populateFeesSubjects);
+    }
+
+    const feesSubjectSelect = document.getElementById('feesSubjectSelect');
+    if (feesSubjectSelect) {
+        feesSubjectSelect.addEventListener('change', calculateAndRenderFees);
     }
 
     const btnPrev = document.getElementById('btnPreviousSemester');
@@ -2510,8 +2871,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const urlStr = window.location.href;
 
         const match = urlStr.match(/[?&#]subject=([A-Za-z0-9]+)/) || urlStr.match(/[?&#]code=([A-Za-z0-9]+)/);
+        const typeMatch = urlStr.match(/[?&#]type=([A-Za-z0-9_]+)/);
 
-        if (match && match[1] && curriculumMap[match[1]]) {
+        if (stateScreen === 'fees-calc' || urlStr.includes('fees-calc') || urlStr.includes('screen=fees-calc')) {
+            openFeesCalculatorScreen(false);
+            let sType = typeMatch ? typeMatch[1] : 'morning';
+            if (sType === 'morning_free') sType = 'morning';
+            if (match && match[1] && curriculumMap[match[1]]) {
+                loadFeesSubjectByCode(match[1], sType);
+            } else if (typeMatch && typeMatch[1]) {
+                const studySelect = document.getElementById('feesStudyTypeSelect');
+                if (studySelect) studySelect.value = sType;
+            }
+        } else if (match && match[1] && curriculumMap[match[1]]) {
             openQuickLookScreen(false);
             loadQuickLookSubjectByCode(match[1]);
         } else if (stateScreen === 'quick-look' || urlStr.includes('quick-look') || urlStr.includes('screen=quick-look')) {
@@ -2527,7 +2899,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialUrl = window.location.href;
         const match = initialUrl.match(/[?&#]subject=([A-Za-z0-9]+)/) || initialUrl.match(/[?&#]code=([A-Za-z0-9]+)/);
 
-        if (match || initialUrl.includes('quick-look') || initialUrl.includes('screen=quick-look') || initialUrl.includes('simulation') || initialUrl.includes('screen=simulation')) {
+        if (match || initialUrl.includes('fees-calc') || initialUrl.includes('screen=fees-calc') || initialUrl.includes('quick-look') || initialUrl.includes('screen=quick-look') || initialUrl.includes('simulation') || initialUrl.includes('screen=simulation')) {
             handleHistoryNavigation();
         } else {
             history.replaceState({ screen: 'welcome' }, '', getAppPath('welcome'));

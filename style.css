@@ -713,7 +713,7 @@ body {
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1.5rem;
 }
 
@@ -751,6 +751,10 @@ body {
     background: linear-gradient(90deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
 }
 
+.glow-fees {
+    background: linear-gradient(90deg, #7c3aed 0%, #a855f7 50%, #f59e0b 100%);
+}
+
 .bento-card:hover {
     transform: translateY(-5px);
     border-color: #cbd5e1;
@@ -767,6 +771,11 @@ body {
 .bento-ql-card:hover {
     border-color: #7dd3fc;
     box-shadow: 0 20px 35px -8px rgba(2, 132, 199, 0.18);
+}
+
+.bento-fees-card:hover {
+    border-color: #c084fc;
+    box-shadow: 0 20px 35px -8px rgba(147, 51, 234, 0.2);
 }
 
 /* Bento Header */
@@ -803,6 +812,11 @@ body {
     border: 1px solid #bae6fd;
 }
 
+.icon-fees {
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+    border: 1px solid #e9d5ff;
+}
+
 .bento-title-group {
     display: flex;
     flex-direction: column;
@@ -827,6 +841,12 @@ body {
     background: #e0f2fe;
     color: #0369a1;
     border: 1px solid #bae6fd;
+}
+
+.badge-fees {
+    background: #f3e8ff;
+    color: #7e22ce;
+    border: 1px solid #d8b4fe;
 }
 
 .bento-card-title {
@@ -940,6 +960,22 @@ body {
         inset 0 1px 1px rgba(255, 255, 255, 0.35);
 }
 
+/* Fees Calculator Button (Royal Purple / Amber with Shimmer) */
+.btn-bento-fees {
+    background: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #d97706 100%);
+    color: #ffffff;
+    box-shadow: 
+        0 6px 20px -2px rgba(124, 58, 237, 0.38),
+        inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+.btn-bento-fees:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 10px 28px -2px rgba(124, 58, 237, 0.48),
+        inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+
 /* Shimmer Sweep Animation on Buttons */
 .btn-shine-sweep {
     position: absolute;
@@ -986,9 +1022,10 @@ body {
 }
 
 /* --------------------------------------------------------------------------
-   0.2 Quick Look Screen (نظرة سريعة على ارتباطات المواد)
+   0.2 Quick Look & Fees Calculator Screens
    -------------------------------------------------------------------------- */
-.quick-look-screen-card {
+.quick-look-screen-card,
+.fees-calculator-screen-card {
     background: var(--bg-card);
     border: 1.5px solid var(--border-light);
     border-radius: var(--radius-xl);
@@ -998,6 +1035,302 @@ body {
     gap: 1.75rem;
     box-shadow: var(--shadow-card);
     animation: fadeIn 0.4s ease-out;
+}
+
+.badge-fees-header {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #d8b4fe;
+}
+
+.fees-selectors-top-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.15rem;
+}
+
+.fees-select-subject {
+    font-size: 0.98rem;
+    font-weight: 800;
+    color: #6d28d9;
+    background: #ffffff;
+    border: 1.5px solid #c4b5fd;
+}
+
+.fees-select-subject:focus {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.22);
+}
+
+/* Fees Results Area */
+.fees-results-area {
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    animation: fadeIn 0.35s ease-out;
+}
+
+.fees-target-card {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #1e293b 100%);
+    color: #ffffff;
+    border-radius: var(--radius-lg);
+    padding: 1.6rem 1.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    box-shadow: 0 10px 30px rgba(30, 27, 75, 0.35);
+    position: relative;
+    overflow: hidden;
+}
+
+.fees-target-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.fees-pill-study {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #fef08a;
+    background: rgba(234, 179, 8, 0.18);
+    border: 1px solid rgba(234, 179, 8, 0.35);
+    padding: 0.3rem 0.85rem;
+    border-radius: 20px;
+}
+
+.fees-grand-total-box {
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+    border: 2px solid #c084fc;
+    border-radius: var(--radius-lg);
+    padding: 1.75rem 1.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.12);
+    position: relative;
+    overflow: hidden;
+}
+
+.fees-total-badge {
+    font-size: 0.84rem;
+    font-weight: 900;
+    color: #6d28d9;
+    background: #eedcff;
+    border: 1px solid #d8b4fe;
+    padding: 0.25rem 0.95rem;
+    border-radius: 9999px;
+}
+
+.fees-total-number-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.fees-total-number {
+    font-size: 2.6rem;
+    font-weight: 900;
+    color: #4c1d95;
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+
+.fees-currency-symbol {
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: #7c3aed;
+}
+
+.fees-tafqeet-text {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #581c87;
+}
+
+.fees-formula-card {
+    margin-top: 1rem;
+    background: #ffffff;
+    border: 1.5px solid #d8b4fe;
+    border-radius: var(--radius-md);
+    padding: 1.15rem 1.4rem;
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85rem;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.08);
+    text-align: center;
+}
+
+.fees-formula-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.fees-formula-type-badge {
+    font-size: 0.88rem;
+    font-weight: 900;
+    color: #6b21a8;
+    background: #f5f3ff;
+    border: 1.5px solid #d8b4fe;
+    padding: 0.32rem 1.15rem;
+    border-radius: 9999px;
+    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.08);
+}
+
+.fees-formula-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.fees-formula-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.fees-formula-label {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.fees-formula-text {
+    font-family: 'Cairo', 'Outfit', sans-serif;
+    color: #1e293b;
+    font-weight: 800;
+    direction: rtl;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.fees-math-token {
+    color: #1e293b;
+    font-weight: 800;
+}
+
+.fees-math-op {
+    color: #7c3aed;
+    font-weight: 900;
+    font-size: 1.05rem;
+    padding: 0 0.1rem;
+}
+
+.fees-units-val {
+    color: #6d28d9;
+    font-weight: 900;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.08rem;
+}
+
+.fees-formula-eval-box {
+    background: #faf5ff;
+    border: 1.5px dashed #c084fc;
+    border-radius: 12px;
+    padding: 0.85rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+}
+
+.fees-eval-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.fees-eval-units-statement {
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #475569;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.fees-eval-math-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.fees-formula-eval {
+    font-family: 'Outfit', 'Cairo', sans-serif;
+    font-size: 1.02rem;
+    font-weight: 900;
+    color: #1e1b4b;
+    direction: ltr;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.fees-eval-token {
+    color: #334155;
+    font-weight: 800;
+}
+
+.fees-eval-badge {
+    background: #ede9fe;
+    color: #6b21a8;
+    padding: 0.1rem 0.45rem;
+    border-radius: 5px;
+    font-weight: 900;
+}
+
+.fees-calc-res-tag {
+    color: #7c3aed;
+    font-size: 1.15rem;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.fees-res-num {
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: 0.5px;
+}
+
+.fees-res-currency {
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.95rem;
 }
 
 .quick-look-header-bar {

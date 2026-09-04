@@ -1779,6 +1779,7 @@ function showWelcomeScreen(pushState = true) {
     if (welcome) {
         // Reset simulation state whenever returning to welcome screen
         initSimulation();
+        resetFeesCalculator();
 
         if (qlScreen) qlScreen.style.display = 'none';
         if (feesScreen) feesScreen.style.display = 'none';
@@ -2422,7 +2423,28 @@ function renderQuickLookResults() {
 // --------------------------------------------------------------------------
 // 4.6 Fees Calculator (أداة احتساب أجور المحاولتين الإضافيتين) Feature Engine
 // --------------------------------------------------------------------------
-function loadFeesSubjectByCode(code, studyType = 'morning') {
+function resetFeesCalculator() {
+    const studySelect = document.getElementById('feesStudyTypeSelect');
+    const stageSelect = document.getElementById('feesStageSelect');
+    const courseSelect = document.getElementById('feesCourseSelect');
+    const subjectSelect = document.getElementById('feesSubjectSelect');
+    const resultsArea = document.getElementById('feesResultsArea');
+
+    if (studySelect) studySelect.value = '';
+    if (stageSelect) stageSelect.value = '';
+    if (courseSelect) courseSelect.value = '';
+    if (subjectSelect) subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+    if (resultsArea) {
+        resultsArea.innerHTML = `
+            <div class="ql-empty-state-box">
+                <span class="ql-empty-icon">💡</span>
+                <p class="ql-empty-text">يرجى اختيار نوع الدراسة، والمرحلة والكورس، ثم المادة لاحتساب الأجور بدقة.</p>
+            </div>
+        `;
+    }
+}
+
+function loadFeesSubjectByCode(code, studyType = '') {
     const subject = curriculumMap[code];
     if (!subject) return;
 
@@ -2434,8 +2456,8 @@ function loadFeesSubjectByCode(code, studyType = 'morning') {
     const subjectSelect = document.getElementById('feesSubjectSelect');
 
     if (stageSelect && courseSelect && subjectSelect) {
-        if (studySelect && studyType) {
-            studySelect.value = studyType;
+        if (studySelect) {
+            studySelect.value = studyType || '';
         }
 
         const stageNum = Math.ceil(subject.sem / 2);
@@ -2478,32 +2500,25 @@ function openFeesCalculatorScreen(pushState = true) {
         const typeMatch = urlStr.match(/[?&#]type=([A-Za-z0-9_]+)/);
 
         if (match && match[1] && curriculumMap[match[1]] && (urlStr.includes('fees-calc') || urlStr.includes('screen=fees-calc'))) {
-            let sType = typeMatch ? typeMatch[1] : 'morning';
+            let sType = typeMatch ? typeMatch[1] : '';
             if (sType === 'morning_free') sType = 'morning';
             loadFeesSubjectByCode(match[1], sType);
         } else {
-            const subjectSelect = document.getElementById('feesSubjectSelect');
-            if (!subjectSelect || !subjectSelect.value) {
-                const stageSelect = document.getElementById('feesStageSelect');
-                const courseSelect = document.getElementById('feesCourseSelect');
-                if (stageSelect) stageSelect.value = '';
-                if (courseSelect) courseSelect.value = '';
-                if (subjectSelect) subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
-                populateFeesSubjects();
-            }
+            resetFeesCalculator();
         }
 
         if (shouldPush) {
             const subjectSelect = document.getElementById('feesSubjectSelect');
             const subCode = subjectSelect ? subjectSelect.value : '';
             const studySelect = document.getElementById('feesStudyTypeSelect');
-            const sType = studySelect && studySelect.value ? studySelect.value : 'morning';
+            const sType = studySelect ? studySelect.value : '';
             history.pushState({ screen: 'fees-calc', subject: subCode, type: sType }, '', getAppPath('fees-calc', subCode, sType));
         }
     }
 }
 
 function closeFeesCalculatorScreen(pushState = true) {
+    resetFeesCalculator();
     showWelcomeScreen(pushState);
 }
 
@@ -2590,8 +2605,20 @@ function calculateAndRenderFees() {
     if (!subject) return;
 
     const studySelect = document.getElementById('feesStudyTypeSelect');
-    let studyType = studySelect ? studySelect.value : 'morning';
+    let studyType = studySelect ? studySelect.value : '';
     if (studyType === 'morning_free') studyType = 'morning';
+
+    if (!studyType) {
+        if (resultsArea) {
+            resultsArea.innerHTML = `
+                <div class="ql-empty-state-box">
+                    <span class="ql-empty-icon">🏛️</span>
+                    <p class="ql-empty-text">يرجى اختيار نوع الدراسة لاحتساب أجور المادة بدقة.</p>
+                </div>
+            `;
+        }
+        return;
+    }
 
     let studyTypeName = 'صباحي (عام)';
     let isSpecial = false;
@@ -2783,7 +2810,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (subjectSelect && subjectSelect.value) {
                 calculateAndRenderFees();
             } else {
-                let sType = feesStudyTypeSelect.value || 'morning';
+                let sType = feesStudyTypeSelect.value || '';
                 if (sType === 'morning_free') sType = 'morning';
                 try {
                     history.replaceState({ screen: 'fees-calc', subject: '', type: sType }, '', getAppPath('fees-calc', '', sType));
@@ -2875,7 +2902,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (stateScreen === 'fees-calc' || urlStr.includes('fees-calc') || urlStr.includes('screen=fees-calc')) {
             openFeesCalculatorScreen(false);
-            let sType = typeMatch ? typeMatch[1] : 'morning';
+            let sType = typeMatch ? typeMatch[1] : '';
             if (sType === 'morning_free') sType = 'morning';
             if (match && match[1] && curriculumMap[match[1]]) {
                 loadFeesSubjectByCode(match[1], sType);

@@ -1717,7 +1717,7 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
 // 4. Welcome Screen & Main Workspace Controls
 // --------------------------------------------------------------------------
 // Helper to generate clean, server-safe SPA URLs without 404 Cannot GET errors
-function getAppPath(screen, subjectCode = '', studyType = '', mode = '') {
+function getAppPath(screen, subjectCode = '', studyType = '', mode = '', extraParams = {}) {
     if (screen === 'workspace' || screen === 'simulation') {
         return '?simulation';
     }
@@ -1735,6 +1735,13 @@ function getAppPath(screen, subjectCode = '', studyType = '', mode = '') {
         if (mode) p += `&mode=${mode}`;
         if (studyType) p += `&type=${studyType}`;
         if (subjectCode) p += `&subject=${subjectCode}`;
+        if (extraParams && typeof extraParams === 'object') {
+            for (const [key, val] of Object.entries(extraParams)) {
+                if (val !== undefined && val !== null && val !== '') {
+                    p += `&${encodeURIComponent(key)}=${encodeURIComponent(val)}`;
+                }
+            }
+        }
         return p;
     }
     const isHttp = window.location.protocol.startsWith('http');
@@ -3030,7 +3037,7 @@ function resetTuitionCalculator() {
     calculateAndRenderTuitionSubject();
 }
 
-function switchTuitionMode(mode) {
+function switchTuitionMode(mode, triggerRender = true) {
     currentTuitionMode = mode;
     const btnModeUnits = document.getElementById('btnTuitionModeUnits');
     const btnModeSubject = document.getElementById('btnTuitionModeSubject');
@@ -3048,7 +3055,9 @@ function switchTuitionMode(mode) {
         }
         if (unitsView) unitsView.style.display = 'block';
         if (subjectView) subjectView.style.display = 'none';
-        calculateAndRenderTuitionUnits();
+        if (triggerRender) {
+            calculateAndRenderTuitionUnits();
+        }
     } else {
         if (btnModeUnits) {
             btnModeUnits.classList.remove('active');
@@ -3060,7 +3069,9 @@ function switchTuitionMode(mode) {
         }
         if (unitsView) unitsView.style.display = 'none';
         if (subjectView) subjectView.style.display = 'block';
-        calculateAndRenderTuitionSubject();
+        if (triggerRender) {
+            calculateAndRenderTuitionSubject();
+        }
     }
 }
 
@@ -3088,13 +3099,23 @@ function openTuitionCalculatorScreen(pushState = true) {
         tuitionScreen.style.animation = 'fadeIn 0.35s ease-out';
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
+        // Capture URL parameters FIRST before any state changes or renders
         const urlStr = window.location.href;
+        const searchStr = window.location.search || (window.location.hash.includes('?') ? '?' + window.location.hash.split('?')[1] : '');
+        const urlParams = new URLSearchParams(searchStr);
+
         const match = urlStr.match(/[?&#]subject=([A-Za-z0-9]+)/) || urlStr.match(/[?&#]code=([A-Za-z0-9]+)/);
         const typeMatch = urlStr.match(/[?&#]type=([A-Za-z0-9_]+)/);
         const modeMatch = urlStr.match(/[?&#]mode=([A-Za-z0-9_]+)/);
 
-        if (modeMatch && modeMatch[1] === 'subject') {
-            switchTuitionMode('subject');
+        const targetMode = (modeMatch && modeMatch[1] === 'subject') ? 'subject' : 'units';
+
+        if (shouldPush) {
+            history.pushState({ screen: 'tuition-calc', mode: targetMode }, '', getAppPath('tuition-calc', '', '', targetMode));
+        }
+
+        if (targetMode === 'subject') {
+            switchTuitionMode('subject', false);
             if (typeMatch && typeMatch[1]) {
                 const subStudy = document.getElementById('tuitionSubStudyType');
                 if (subStudy) subStudy.value = typeMatch[1];
@@ -3105,17 +3126,91 @@ function openTuitionCalculatorScreen(pushState = true) {
                 calculateAndRenderTuitionSubject();
             }
         } else {
-            switchTuitionMode('units');
+            switchTuitionMode('units', false);
             const unitsStudy = document.getElementById('tuitionUnitsStudyType');
-            if (typeMatch && typeMatch[1] && unitsStudy) {
-                unitsStudy.value = typeMatch[1];
+            const studyTypeVal = (typeMatch && typeMatch[1]) ? typeMatch[1] : (urlParams.get('type') || 'evening');
+            if (unitsStudy) {
+                unitsStudy.value = studyTypeVal;
             }
-            populateTuitionDiscounts(unitsStudy ? unitsStudy.value : 'evening');
-            calculateAndRenderTuitionUnits();
-        }
+            populateTuitionDiscounts(studyTypeVal);
 
-        if (shouldPush) {
-            history.pushState({ screen: 'tuition-calc', mode: currentTuitionMode }, '', getAppPath('tuition-calc', '', '', currentTuitionMode));
+            // Units for Course 1 and Course 2
+            const c1Input = document.getElementById('tuitionCourse1Units');
+            const c2Input = document.getElementById('tuitionCourse2Units');
+            if (urlParams.has('c1') && c1Input) {
+                const v = parseFloat(urlParams.get('c1'));
+                if (!isNaN(v)) c1Input.value = Math.min(30, Math.max(0, v)).toString();
+            }
+            if (urlParams.has('c2') && c2Input) {
+                const v = parseFloat(urlParams.get('c2'));
+                if (!isNaN(v)) c2Input.value = Math.min(30, Math.max(0, v)).toString();
+            }
+
+            // Discounts - only activate if present in URL
+            const d1Val = urlParams.get('d1') || urlParams.get('discount');
+            const p1Val = urlParams.get('p1') || urlParams.get('percent1');
+            const d2Val = urlParams.get('d2') || urlParams.get('discount2');
+            const p2Val = urlParams.get('p2') || urlParams.get('percent2');
+            const postponeVal = urlParams.get('postpone');
+
+            const discountToggle = document.getElementById('tuitionUnitsDiscountToggle');
+            const discountBox = document.getElementById('tuitionUnitsDiscountBox');
+            const discountTypeSelect = document.getElementById('tuitionUnitsDiscountType');
+            const customWrapper = document.getElementById('tuitionUnitsCustomDiscountWrapper');
+            const customPercentInput = document.getElementById('tuitionUnitsDiscountPercent');
+
+            if (d1Val && discountToggle && discountTypeSelect) {
+                discountToggle.checked = true;
+                const card = discountToggle.closest('.tuition-discount-card');
+                if (card) card.classList.add('active-discount');
+                if (discountBox) discountBox.style.display = 'flex';
+                discountTypeSelect.value = d1Val;
+                if (d1Val === 'custom') {
+                    if (customWrapper) customWrapper.style.display = 'flex';
+                    if (p1Val && customPercentInput) {
+                        const pv = parseFloat(p1Val);
+                        if (!isNaN(pv)) customPercentInput.value = Math.min(100, Math.max(0, pv)).toString();
+                    }
+                } else {
+                    if (customWrapper) customWrapper.style.display = 'none';
+                }
+
+                // Second discount option
+                const discount2Toggle = document.getElementById('tuitionUnitsDiscount2Toggle');
+                const discount2Box = document.getElementById('tuitionUnitsDiscount2Box');
+                const discount2TypeSelect = document.getElementById('tuitionUnitsDiscount2Type');
+                const custom2Wrapper = document.getElementById('tuitionUnitsCustomDiscount2Wrapper');
+                const custom2PercentInput = document.getElementById('tuitionUnitsDiscount2Percent');
+
+                if (d2Val && discount2Toggle && discount2TypeSelect) {
+                    discount2Toggle.checked = true;
+                    if (discount2Box) discount2Box.style.display = 'flex';
+                    discount2TypeSelect.value = d2Val;
+                    if (d2Val === 'custom') {
+                        if (custom2Wrapper) custom2Wrapper.style.display = 'flex';
+                        if (p2Val && custom2PercentInput) {
+                            const pv2 = parseFloat(p2Val);
+                            if (!isNaN(pv2)) custom2PercentInput.value = Math.min(100, Math.max(0, pv2)).toString();
+                        }
+                    } else {
+                        if (custom2Wrapper) custom2Wrapper.style.display = 'none';
+                    }
+                }
+            }
+
+            // Postponement - only activate if present in URL
+            const postponeToggle = document.getElementById('tuitionPostponeToggle');
+            if (postponeToggle) {
+                const isPostponed = (postponeVal === '1' || postponeVal === 'true');
+                postponeToggle.checked = isPostponed;
+                const postponeCard = postponeToggle.closest('.tuition-postpone-card');
+                if (postponeCard) {
+                    if (isPostponed) postponeCard.classList.add('active-postpone');
+                    else postponeCard.classList.remove('active-postpone');
+                }
+            }
+
+            calculateAndRenderTuitionUnits();
         }
     }
 }
@@ -3208,9 +3303,29 @@ function calculateAndRenderTuitionUnits() {
     const bothDiscountsActive = anyDiscountActive && (hasDiscount2 && discount2Percent > 0);
     const finalGrandTotal = finalFeeUnits + postponeFee;
 
+    const extraParams = {
+        c1: c1,
+        c2: c2
+    };
+    if (hasDiscount && selectedDiscountVal) {
+        extraParams.d1 = selectedDiscountVal;
+        if (selectedDiscountVal === 'custom') {
+            extraParams.p1 = discountPercent;
+        }
+    }
+    if (hasDiscount2 && selected2DiscountVal) {
+        extraParams.d2 = selected2DiscountVal;
+        if (selected2DiscountVal === 'custom') {
+            extraParams.p2 = discount2Percent;
+        }
+    }
+    if (hasPostpone) {
+        extraParams.postpone = '1';
+    }
+
     try {
         if (currentTuitionMode === 'units') {
-            history.replaceState({ screen: 'tuition-calc', mode: 'units', type: studyType }, '', getAppPath('tuition-calc', '', studyType, 'units'));
+            history.replaceState({ screen: 'tuition-calc', mode: 'units', type: studyType, ...extraParams }, '', getAppPath('tuition-calc', '', studyType, 'units', extraParams));
         }
     } catch (e) {}
 
@@ -3220,6 +3335,11 @@ function calculateAndRenderTuitionUnits() {
                 <div class="ql-target-title-block">
                     <h3 class="ql-target-name-ar">إجمالي الوحدات المسجلة: ${totalUnits} وحدة</h3>
                     <span class="ql-target-name-en">الكورس الأول: ${c1} وحدة • الكورس الثاني: ${c2} وحدة</span>
+                </div>
+                <div class="ql-target-action-block">
+                    <button type="button" class="btn-share-ql-icon" id="btnShareTuitionUnits" title="نسخ رابط تفاصيل القسط والمشاركة">
+                        <span>🔗</span>
+                    </button>
                 </div>
             </div>
             <div class="ql-target-meta-badges">
@@ -3385,6 +3505,27 @@ function calculateAndRenderTuitionUnits() {
             </div>
         </div>
     `;
+
+    const btnShareUnits = document.getElementById('btnShareTuitionUnits');
+    if (btnShareUnits) {
+        btnShareUnits.addEventListener('click', async () => {
+            const baseUrl = window.location.href.split('?')[0].split('#')[0];
+            const pathWithQuery = getAppPath('tuition-calc', '', studyType, 'units', extraParams);
+            const shareUrl = `${baseUrl}${pathWithQuery}`;
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+            } catch (err) {
+                const tempInput = document.createElement('input');
+                tempInput.value = shareUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+            }
+
+            showAppToast('تم نسخ رابط تفاصيل القسط والمشاركة بنجاح');
+        });
+    }
 }
 
 function populateTuitionSubjects() {
@@ -3569,11 +3710,9 @@ function calculateAndRenderTuitionSubject() {
     const btnShare = document.getElementById('btnShareTuitionSubject');
     if (btnShare) {
         btnShare.addEventListener('click', async () => {
-            const originBase = `${window.location.origin}${window.location.pathname.replace(/\/index\.html$/, '')}`;
-            const cleanBase = originBase.endsWith('/') ? originBase.slice(0, -1) : originBase;
-            const shareUrl = window.location.protocol.startsWith('http')
-                ? `${cleanBase}/?tuition-calc&mode=subject&type=${studyType}&subject=${subject.code}`
-                : `${window.location.href.split('?')[0].split('#')[0]}?tuition-calc&mode=subject&type=${studyType}&subject=${subject.code}`;
+            const baseUrl = window.location.href.split('?')[0].split('#')[0];
+            const pathWithQuery = getAppPath('tuition-calc', subject.code, studyType, 'subject');
+            const shareUrl = `${baseUrl}${pathWithQuery}`;
             try {
                 await navigator.clipboard.writeText(shareUrl);
             } catch (err) {

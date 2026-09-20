@@ -84,6 +84,11 @@
         padding: 0.25rem 0.75rem;
     }
 
+    .category-indicator-badge {
+        font-size: 0.84rem;
+        padding: 0.38rem 0.95rem;
+    }
+
     .welcome-bento-grid {
         grid-template-columns: 1fr;
         gap: 1.15rem;
@@ -214,19 +219,124 @@
         padding: 0.6rem 1rem;
     }
 
-    .fees-calculator-screen-card {
+    .fees-calculator-screen-card,
+    .tuition-calculator-screen-card {
         padding: 1.25rem 0.95rem;
         gap: 1.15rem;
     }
 
-    .fees-selectors-top-row {
+    .fees-selectors-top-row,
+    .tuition-selectors-row,
+    .tuition-units-inputs-grid {
         grid-template-columns: 1fr;
         gap: 0.75rem;
+    }
+
+    .tuition-switch-wrapper {
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .tuition-switch-btn {
+        padding: 0.65rem 0.85rem;
+        font-size: 0.84rem;
+        white-space: normal;
+    }
+
+    .tuition-discount-breakdown-card {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .discount-input-reveal {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .second-discount-reveal {
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .fees-formula-calculation {
         font-size: 0.9rem;
         padding: 0.45rem 0.7rem;
+    }
+
+    /* Formula Card Mobile Optimization */
+    .fees-formula-card {
+        padding: 0.95rem 0.75rem;
+        margin-top: 0.85rem;
+        border-radius: var(--radius-md);
+        gap: 0.75rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .fees-formula-type-badge {
+        font-size: 0.78rem;
+        padding: 0.25rem 0.85rem;
+        white-space: normal;
+        text-align: center;
+    }
+
+    .fees-formula-row {
+        flex-direction: column;
+        gap: 0.35rem;
+        align-items: center;
+        width: 100%;
+    }
+
+    .fees-formula-text {
+        font-size: 0.82rem;
+        line-height: 1.55;
+        text-align: center;
+        gap: 0.25rem;
+    }
+
+    .fees-formula-eval-box {
+        padding: 0.75rem 0.65rem;
+        gap: 0.65rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .fees-eval-top-row {
+        flex-direction: column;
+        gap: 0.45rem;
+        align-items: center;
+        width: 100%;
+    }
+
+    .tuition-eval-units-chips {
+        gap: 0.35rem;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .tuition-unit-chip {
+        font-size: 0.76rem;
+        padding: 0.22rem 0.55rem;
+        border-radius: 6px;
+    }
+
+    .tuition-math-steps-card {
+        gap: 0.45rem;
+        width: 100%;
+    }
+
+    .tuition-math-step-row {
+        font-size: 0.8rem;
+        padding: 0.45rem 0.65rem;
+        gap: 0.35rem;
+        line-height: 1.4;
+        text-align: center;
+    }
+
+    .math-step-val.final-val {
+        font-size: 0.92rem;
+        padding: 0.12rem 0.45rem;
     }
 
     .fees-total-number {

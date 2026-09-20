@@ -1067,7 +1067,7 @@ function renderRegistrationPanels(panelsData, activeSem) {
         if (panelsData.available.some(m => m.ects === 7)) {
             const noticeDiv = document.createElement('div');
             noticeDiv.className = 'available-7ects-notice';
-            noticeDiv.innerHTML = `💡 تتوفر مواد متاح إضافتها بمقدار 7 وحدات (7 ECTS) لجدولك الدراسي.`;
+            noticeDiv.innerHTML = `💡 تتوفر مواد متاح إضافتها بمقدار 7 وحدات لجدولك الدراسي.`;
             availList.appendChild(noticeDiv);
         }
 
@@ -1717,7 +1717,7 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
 // 4. Welcome Screen & Main Workspace Controls
 // --------------------------------------------------------------------------
 // Helper to generate clean, server-safe SPA URLs without 404 Cannot GET errors
-function getAppPath(screen, subjectCode = '', studyType = '') {
+function getAppPath(screen, subjectCode = '', studyType = '', mode = '') {
     if (screen === 'workspace' || screen === 'simulation') {
         return '?simulation';
     }
@@ -1726,6 +1726,13 @@ function getAppPath(screen, subjectCode = '', studyType = '') {
     }
     if (screen === 'fees-calc') {
         let p = '?fees-calc';
+        if (studyType) p += `&type=${studyType}`;
+        if (subjectCode) p += `&subject=${subjectCode}`;
+        return p;
+    }
+    if (screen === 'tuition-calc') {
+        let p = '?tuition-calc';
+        if (mode) p += `&mode=${mode}`;
         if (studyType) p += `&type=${studyType}`;
         if (subjectCode) p += `&subject=${subjectCode}`;
         return p;
@@ -1746,6 +1753,7 @@ function startSimulation(pushState = true) {
     const appHeader = document.getElementById('appHeader');
     const topSlimStrip = document.getElementById('topSlimStrip');
     const feesScreen = document.getElementById('feesCalculatorScreen');
+    const tuitionScreen = document.getElementById('tuitionCalculatorScreen');
 
     if (welcome && mainWS) {
         // Reset simulation to zero (clean fresh start)
@@ -1753,6 +1761,7 @@ function startSimulation(pushState = true) {
 
         if (qlScreen) qlScreen.style.display = 'none';
         if (feesScreen) feesScreen.style.display = 'none';
+        if (tuitionScreen) tuitionScreen.style.display = 'none';
         welcome.style.display = 'none';
         if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
         mainWS.style.display = 'flex';
@@ -1772,6 +1781,7 @@ function showWelcomeScreen(pushState = true) {
     const welcomeTopHeader = document.getElementById('welcomeTopHeader');
     const qlScreen = document.getElementById('quickLookScreen');
     const feesScreen = document.getElementById('feesCalculatorScreen');
+    const tuitionScreen = document.getElementById('tuitionCalculatorScreen');
     const mainWS = document.getElementById('mainWorkspace');
     const appHeader = document.getElementById('appHeader');
     const topSlimStrip = document.getElementById('topSlimStrip');
@@ -1780,9 +1790,11 @@ function showWelcomeScreen(pushState = true) {
         // Reset simulation state whenever returning to welcome screen
         initSimulation();
         resetFeesCalculator();
+        if (typeof resetTuitionCalculator === 'function') resetTuitionCalculator();
 
         if (qlScreen) qlScreen.style.display = 'none';
         if (feesScreen) feesScreen.style.display = 'none';
+        if (tuitionScreen) tuitionScreen.style.display = 'none';
         welcome.style.display = 'flex';
         welcome.style.opacity = '1';
         welcome.style.transform = 'translateY(0)';
@@ -1834,6 +1846,7 @@ function openQuickLookScreen(pushState = true) {
     const welcomeTopHeader = document.getElementById('welcomeTopHeader');
     const qlScreen = document.getElementById('quickLookScreen');
     const feesScreen = document.getElementById('feesCalculatorScreen');
+    const tuitionScreen = document.getElementById('tuitionCalculatorScreen');
     const mainWS = document.getElementById('mainWorkspace');
     const appHeader = document.getElementById('appHeader');
     const topSlimStrip = document.getElementById('topSlimStrip');
@@ -1841,6 +1854,7 @@ function openQuickLookScreen(pushState = true) {
     if (welcome && qlScreen) {
         welcome.style.display = 'none';
         if (feesScreen) feesScreen.style.display = 'none';
+        if (tuitionScreen) tuitionScreen.style.display = 'none';
         if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
         if (mainWS) mainWS.style.display = 'none';
         if (appHeader) appHeader.style.display = 'none';
@@ -2479,6 +2493,7 @@ function openFeesCalculatorScreen(pushState = true) {
     const welcomeTopHeader = document.getElementById('welcomeTopHeader');
     const qlScreen = document.getElementById('quickLookScreen');
     const feesScreen = document.getElementById('feesCalculatorScreen');
+    const tuitionScreen = document.getElementById('tuitionCalculatorScreen');
     const mainWS = document.getElementById('mainWorkspace');
     const appHeader = document.getElementById('appHeader');
     const topSlimStrip = document.getElementById('topSlimStrip');
@@ -2487,6 +2502,7 @@ function openFeesCalculatorScreen(pushState = true) {
         if (welcome) welcome.style.display = 'none';
         if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
         if (qlScreen) qlScreen.style.display = 'none';
+        if (tuitionScreen) tuitionScreen.style.display = 'none';
         if (mainWS) mainWS.style.display = 'none';
         if (appHeader) appHeader.style.display = 'none';
         if (topSlimStrip) topSlimStrip.style.display = 'none';
@@ -2573,7 +2589,39 @@ function formatNumberIQD(num) {
     return Number(num).toLocaleString('en-US');
 }
 
+function convertNumberToArabicWords(n) {
+    if (n === 0) return '';
+    const onesMap = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
+    const tensSpecial = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+    const tensMap = ['', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+    const hundredsMap = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
+
+    let h = Math.floor(n / 100);
+    let rem = n % 100;
+    let parts = [];
+
+    if (h > 0) parts.push(hundredsMap[h]);
+
+    if (rem >= 10 && rem < 20) {
+        parts.push(tensSpecial[rem - 10]);
+    } else {
+        let o = rem % 10;
+        let t = Math.floor(rem / 10);
+        if (o > 0 && t > 0) {
+            parts.push(`${onesMap[o]} و ${tensMap[t]}`);
+        } else if (o > 0) {
+            parts.push(onesMap[o]);
+        } else if (t > 0) {
+            parts.push(tensMap[t]);
+        }
+    }
+    return parts.join(' و ');
+}
+
 function tafqeetIQD(num) {
+    num = Math.round(Number(num));
+    if (num <= 0) return 'صفر دينار عراقي';
+
     const map = {
         25000: 'خمسة وعشرون ألف دينار عراقي',
         31250: 'واحد وثلاثون ألفاً ومائتان وخمسون دينار عراقي',
@@ -2589,10 +2637,54 @@ function tafqeetIQD(num) {
         187500: 'مائة وسبعة وثمانون ألفاً وخمسمائة دينار عراقي',
         200000: 'مائتان ألف دينار عراقي',
         218750: 'مائتان وثمانية عشر ألفاً وسبعمائة وخمسون دينار عراقي',
-        250000: 'مائتان وخمسون ألف دينار عراقي'
+        250000: 'مائتان وخمسون ألف دينار عراقي',
+        300000: 'ثلاثمائة ألف دينار عراقي',
+        375000: 'ثلاثمائة وخمسة وسبعون ألف دينار عراقي',
+        400000: 'أربعمائة ألف دينار عراقي',
+        500000: 'خمسمائة ألف دينار عراقي',
+        600000: 'ستمائة ألف دينار عراقي',
+        675000: 'ستمائة وخمسة وسبعون ألف دينار عراقي',
+        700000: 'سبعمائة ألف دينار عراقي',
+        750000: 'سبعمائة وخمسون ألف دينار عراقي',
+        800000: 'ثمانمائة ألف دينار عراقي',
+        900000: 'تسعمائة ألف دينار عراقي',
+        1000000: 'مليون دينار عراقي',
+        1125000: 'مليون ومائة وخمسة وعشرون ألف دينار عراقي',
+        1200000: 'مليون ومئتا ألف دينار عراقي',
+        1350000: 'مليون وثلاثمائة وخمسون ألف دينار عراقي',
+        1400000: 'مليون وأربعمائة ألف دينار عراقي',
+        1500000: 'مليون وخمسمائة ألف دينار عراقي'
     };
     if (map[num]) return map[num];
-    return `${formatNumberIQD(num)} دينار عراقي`;
+
+    const millions = Math.floor(num / 1000000);
+    const remainder = num % 1000000;
+    const thousands = Math.floor(remainder / 1000);
+    const ones = remainder % 1000;
+
+    let parts = [];
+    if (millions === 1) parts.push('مليون');
+    else if (millions === 2) parts.push('مليونان');
+    else if (millions > 2) {
+        parts.push(`${convertNumberToArabicWords(millions)} ملايين`);
+    }
+
+    if (thousands > 0) {
+        if (thousands === 1) parts.push('ألف');
+        else if (thousands === 2) parts.push('ألفان');
+        else if (thousands >= 3 && thousands <= 10) {
+            parts.push(`${convertNumberToArabicWords(thousands)} آلاف`);
+        } else {
+            parts.push(`${convertNumberToArabicWords(thousands)} ألف`);
+        }
+    }
+
+    if (ones > 0) {
+        parts.push(convertNumberToArabicWords(ones));
+    }
+
+    const text = parts.join(' و ');
+    return text ? `${text} دينار عراقي` : `${formatNumberIQD(num)} دينار عراقي`;
 }
 
 function calculateAndRenderFees() {
@@ -2755,6 +2847,750 @@ function calculateAndRenderFees() {
 }
 
 // --------------------------------------------------------------------------
+// --------------------------------------------------------------------------
+// 4.7 Tuition Fees Calculator (حاسبة أقساط المسائي والصباحي الموازي) Feature Engine
+// --------------------------------------------------------------------------
+const TUITION_ANNUAL_FEE = 1500000;
+let currentTuitionMode = 'units'; // 'units' or 'subject'
+
+const TUITION_DISCOUNTS = {
+    evening: [
+        {
+            group: '👥 الحالات الاجتماعية والخاصة',
+            options: [
+                { value: '25_staff', percent: 25, label: 'خصم ابناء الهيئة التدريسية (25%)' },
+                { value: '50_care', percent: 50, label: 'خصم المشمولين بالرعاية الأجتماعية (50%)' }
+            ]
+        },
+        {
+            group: '🏆 الطلبة الأوائل (حسب الترتيب في الدفعة)',
+            options: [
+                { value: '50_top1', percent: 50, label: 'خصم الطالب الأول (50%)' },
+                { value: '30_top2', percent: 30, label: 'خصم الطالب الثاني (30%)' },
+                { value: '20_top3', percent: 20, label: 'خصم الطالب الثالث (20%)' }
+            ]
+        },
+        { value: 'custom', percent: null, label: 'خصم آخر' }
+    ],
+    morning_parallel: [
+        {
+            group: '📅 حسب سنة القبول',
+            options: [
+                { value: '50_cont', percent: 50, label: 'الطلبة المستمرون (قبول 2024-2025 وما قبلها) (50%)' },
+                { value: '30_new', percent: 30, label: 'الطلبة الجدد (قبول 2025-2026 وصعوداً) (30%)' }
+            ]
+        },
+        {
+            group: '👥 الحالات الاجتماعية والخاصة',
+            options: [
+                { value: '50_welfare', percent: 50, label: 'مستفيدو الرعاية الاجتماعية (50%)' },
+                { value: '50_distinguished', percent: 50, label: 'خريجو مدارس المتميزين وكلية بغداد (50%)' },
+                { value: '10_siblings', percent: 10, label: 'الطلبة الإخوة في نفس القناة (10%)' }
+            ]
+        },
+        {
+            group: '🏆 الطلبة المتفوقون والأوائل',
+            options: [
+                { value: '100_top1', percent: 100, label: 'المرتبة الأولى بتقدير لا يقل عن جيد جداً (إعفاء 100%)' },
+                { value: '50_tier1', percent: 50, label: 'أعلى 10% من الطلبة - الشريحة الأولى (50%)' },
+                { value: '40_tier2', percent: 40, label: 'الـ 10% الثانية - الشريحة الثانية (40%)' },
+                { value: '30_tier3', percent: 30, label: 'الـ 10% الثالثة - الشريحة الثالثة (30%)' }
+            ]
+        },
+        { value: 'custom', percent: null, label: 'خصم آخر' }
+    ]
+};
+
+function populateTuitionDiscounts(studyType = 'evening') {
+    const discountTypeSelect = document.getElementById('tuitionUnitsDiscountType');
+    const discount2TypeSelect = document.getElementById('tuitionUnitsDiscount2Type');
+    if (!discountTypeSelect && !discount2TypeSelect) return;
+
+    const list = TUITION_DISCOUNTS[studyType] || TUITION_DISCOUNTS.evening;
+    let optionsHtml = '';
+
+    list.forEach(item => {
+        if (item.group) {
+            optionsHtml += `<optgroup label="${item.group}">`;
+            item.options.forEach(opt => {
+                optionsHtml += `<option value="${opt.value}" data-percent="${opt.percent}">${opt.label}</option>`;
+            });
+            optionsHtml += `</optgroup>`;
+        } else {
+            const pAttr = item.percent !== null ? `data-percent="${item.percent}"` : '';
+            optionsHtml += `<option value="${item.value}" ${pAttr}>${item.label}</option>`;
+        }
+    });
+
+    if (discountTypeSelect) {
+        const curVal = discountTypeSelect.value;
+        discountTypeSelect.innerHTML = `<option value="" disabled selected>اختر الخصم</option>` + optionsHtml;
+        if (curVal && curVal !== '') {
+            discountTypeSelect.value = curVal;
+        } else {
+            discountTypeSelect.value = '';
+        }
+        const customWrapper = document.getElementById('tuitionUnitsCustomDiscountWrapper');
+        if (customWrapper) {
+            customWrapper.style.display = discountTypeSelect.value === 'custom' ? 'flex' : 'none';
+        }
+    }
+
+    if (discount2TypeSelect) {
+        const cur2Val = discount2TypeSelect.value;
+        discount2TypeSelect.innerHTML = `<option value="" disabled selected>اختر الخصم الثاني</option>` + optionsHtml;
+        if (cur2Val && cur2Val !== '') {
+            discount2TypeSelect.value = cur2Val;
+        } else {
+            discount2TypeSelect.value = '';
+        }
+        const customWrapper2 = document.getElementById('tuitionUnitsCustomDiscount2Wrapper');
+        if (customWrapper2) {
+            customWrapper2.style.display = discount2TypeSelect.value === 'custom' ? 'flex' : 'none';
+        }
+    }
+}
+
+function resetTuitionCalculator() {
+    currentTuitionMode = 'units';
+    const btnModeUnits = document.getElementById('btnTuitionModeUnits');
+    const btnModeSubject = document.getElementById('btnTuitionModeSubject');
+    const unitsView = document.getElementById('tuitionUnitsView');
+    const subjectView = document.getElementById('tuitionSubjectView');
+
+    if (btnModeUnits) {
+        btnModeUnits.classList.add('active');
+        btnModeUnits.setAttribute('aria-selected', 'true');
+    }
+    if (btnModeSubject) {
+        btnModeSubject.classList.remove('active');
+        btnModeSubject.setAttribute('aria-selected', 'false');
+    }
+    if (unitsView) unitsView.style.display = 'block';
+    if (subjectView) subjectView.style.display = 'none';
+
+    // Reset Units View Inputs
+    const unitsStudyType = document.getElementById('tuitionUnitsStudyType');
+    if (unitsStudyType) {
+        unitsStudyType.value = 'evening';
+        populateTuitionDiscounts('evening');
+    }
+    const c1Units = document.getElementById('tuitionCourse1Units');
+    const c2Units = document.getElementById('tuitionCourse2Units');
+    const unitsDiscountToggle = document.getElementById('tuitionUnitsDiscountToggle');
+    const unitsDiscountBox = document.getElementById('tuitionUnitsDiscountBox');
+    const unitsDiscountPercent = document.getElementById('tuitionUnitsDiscountPercent');
+
+    const unitsDiscount2Toggle = document.getElementById('tuitionUnitsDiscount2Toggle');
+    const unitsDiscount2Box = document.getElementById('tuitionUnitsDiscount2Box');
+    const unitsDiscount2Percent = document.getElementById('tuitionUnitsDiscount2Percent');
+
+    if (unitsStudyType) unitsStudyType.value = 'evening';
+    if (c1Units) c1Units.value = '30';
+    if (c2Units) c2Units.value = '30';
+    if (unitsDiscountToggle) {
+        unitsDiscountToggle.checked = false;
+        const card = unitsDiscountToggle.closest('.tuition-discount-card');
+        if (card) card.classList.remove('active-discount');
+    }
+    const unitsDiscountType = document.getElementById('tuitionUnitsDiscountType');
+    const customDiscountWrapper = document.getElementById('tuitionUnitsCustomDiscountWrapper');
+    if (unitsDiscountBox) unitsDiscountBox.style.display = 'none';
+    if (unitsDiscountType) unitsDiscountType.value = '';
+    if (customDiscountWrapper) customDiscountWrapper.style.display = 'none';
+    if (unitsDiscountPercent) unitsDiscountPercent.value = '10';
+
+    if (unitsDiscount2Toggle) unitsDiscount2Toggle.checked = false;
+    const unitsDiscount2Type = document.getElementById('tuitionUnitsDiscount2Type');
+    const customDiscount2Wrapper = document.getElementById('tuitionUnitsCustomDiscount2Wrapper');
+    if (unitsDiscount2Box) unitsDiscount2Box.style.display = 'none';
+    if (unitsDiscount2Type) unitsDiscount2Type.value = '';
+    if (customDiscount2Wrapper) customDiscount2Wrapper.style.display = 'none';
+    if (unitsDiscount2Percent) unitsDiscount2Percent.value = '10';
+
+    const postponeToggle = document.getElementById('tuitionPostponeToggle');
+    if (postponeToggle) {
+        postponeToggle.checked = false;
+        const postponeCard = postponeToggle.closest('.tuition-postpone-card');
+        if (postponeCard) postponeCard.classList.remove('active-postpone');
+    }
+
+    // Reset Subject View Inputs
+    const subStudyType = document.getElementById('tuitionSubStudyType');
+    const subStageSelect = document.getElementById('tuitionSubStageSelect');
+    const subCourseSelect = document.getElementById('tuitionSubCourseSelect');
+    const subSubjectSelect = document.getElementById('tuitionSubSubjectSelect');
+
+    if (subStudyType) subStudyType.value = 'evening';
+    if (subStageSelect) subStageSelect.value = '';
+    if (subCourseSelect) subCourseSelect.value = '';
+    if (subSubjectSelect) subSubjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+
+    calculateAndRenderTuitionUnits();
+    calculateAndRenderTuitionSubject();
+}
+
+function switchTuitionMode(mode) {
+    currentTuitionMode = mode;
+    const btnModeUnits = document.getElementById('btnTuitionModeUnits');
+    const btnModeSubject = document.getElementById('btnTuitionModeSubject');
+    const unitsView = document.getElementById('tuitionUnitsView');
+    const subjectView = document.getElementById('tuitionSubjectView');
+
+    if (mode === 'units') {
+        if (btnModeUnits) {
+            btnModeUnits.classList.add('active');
+            btnModeUnits.setAttribute('aria-selected', 'true');
+        }
+        if (btnModeSubject) {
+            btnModeSubject.classList.remove('active');
+            btnModeSubject.setAttribute('aria-selected', 'false');
+        }
+        if (unitsView) unitsView.style.display = 'block';
+        if (subjectView) subjectView.style.display = 'none';
+        calculateAndRenderTuitionUnits();
+    } else {
+        if (btnModeUnits) {
+            btnModeUnits.classList.remove('active');
+            btnModeUnits.setAttribute('aria-selected', 'false');
+        }
+        if (btnModeSubject) {
+            btnModeSubject.classList.add('active');
+            btnModeSubject.setAttribute('aria-selected', 'true');
+        }
+        if (unitsView) unitsView.style.display = 'none';
+        if (subjectView) subjectView.style.display = 'block';
+        calculateAndRenderTuitionSubject();
+    }
+}
+
+function openTuitionCalculatorScreen(pushState = true) {
+    const shouldPush = typeof pushState === 'boolean' ? pushState : true;
+    const welcome = document.getElementById('welcomeScreen');
+    const welcomeTopHeader = document.getElementById('welcomeTopHeader');
+    const qlScreen = document.getElementById('quickLookScreen');
+    const feesScreen = document.getElementById('feesCalculatorScreen');
+    const tuitionScreen = document.getElementById('tuitionCalculatorScreen');
+    const mainWS = document.getElementById('mainWorkspace');
+    const appHeader = document.getElementById('appHeader');
+    const topSlimStrip = document.getElementById('topSlimStrip');
+
+    if (tuitionScreen) {
+        if (welcome) welcome.style.display = 'none';
+        if (welcomeTopHeader) welcomeTopHeader.style.display = 'none';
+        if (qlScreen) qlScreen.style.display = 'none';
+        if (feesScreen) feesScreen.style.display = 'none';
+        if (mainWS) mainWS.style.display = 'none';
+        if (appHeader) appHeader.style.display = 'none';
+        if (topSlimStrip) topSlimStrip.style.display = 'none';
+
+        tuitionScreen.style.display = 'flex';
+        tuitionScreen.style.animation = 'fadeIn 0.35s ease-out';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        const urlStr = window.location.href;
+        const match = urlStr.match(/[?&#]subject=([A-Za-z0-9]+)/) || urlStr.match(/[?&#]code=([A-Za-z0-9]+)/);
+        const typeMatch = urlStr.match(/[?&#]type=([A-Za-z0-9_]+)/);
+        const modeMatch = urlStr.match(/[?&#]mode=([A-Za-z0-9_]+)/);
+
+        if (modeMatch && modeMatch[1] === 'subject') {
+            switchTuitionMode('subject');
+            if (typeMatch && typeMatch[1]) {
+                const subStudy = document.getElementById('tuitionSubStudyType');
+                if (subStudy) subStudy.value = typeMatch[1];
+            }
+            if (match && match[1] && curriculumMap[match[1]]) {
+                loadTuitionSubjectByCode(match[1], typeMatch ? typeMatch[1] : '');
+            } else {
+                calculateAndRenderTuitionSubject();
+            }
+        } else {
+            switchTuitionMode('units');
+            const unitsStudy = document.getElementById('tuitionUnitsStudyType');
+            if (typeMatch && typeMatch[1] && unitsStudy) {
+                unitsStudy.value = typeMatch[1];
+            }
+            populateTuitionDiscounts(unitsStudy ? unitsStudy.value : 'evening');
+            calculateAndRenderTuitionUnits();
+        }
+
+        if (shouldPush) {
+            history.pushState({ screen: 'tuition-calc', mode: currentTuitionMode }, '', getAppPath('tuition-calc', '', '', currentTuitionMode));
+        }
+    }
+}
+
+function closeTuitionCalculatorScreen(pushState = true) {
+    resetTuitionCalculator();
+    showWelcomeScreen(pushState);
+}
+
+function calculateAndRenderTuitionUnits() {
+    const resultsArea = document.getElementById('tuitionUnitsResultsArea');
+    if (!resultsArea) return;
+
+    const studySelect = document.getElementById('tuitionUnitsStudyType');
+    const studyType = studySelect ? studySelect.value : 'evening';
+    const studyTypeName = (studyType === 'morning_parallel') ? 'صباحي (خاص / موازي)' : 'مسائي';
+    const baseFee = TUITION_ANNUAL_FEE;
+
+    const c1Input = document.getElementById('tuitionCourse1Units');
+    const c2Input = document.getElementById('tuitionCourse2Units');
+    const c1Val = c1Input ? parseFloat(c1Input.value.replace(/[^0-9.]/g, '')) : 0;
+    const c2Val = c2Input ? parseFloat(c2Input.value.replace(/[^0-9.]/g, '')) : 0;
+    const c1 = isNaN(c1Val) ? 0 : Math.min(30, Math.max(0, c1Val));
+    const c2 = isNaN(c2Val) ? 0 : Math.min(30, Math.max(0, c2Val));
+    const totalUnits = c1 + c2;
+
+    const discountToggle = document.getElementById('tuitionUnitsDiscountToggle');
+    const hasDiscount = discountToggle ? discountToggle.checked : false;
+
+    const discountTypeSelect = document.getElementById('tuitionUnitsDiscountType');
+    const selectedOption = discountTypeSelect?.options[discountTypeSelect.selectedIndex];
+    const selectedDiscountVal = discountTypeSelect ? discountTypeSelect.value : '';
+    const selectedDiscountOptionText = selectedOption ? selectedOption.text : '';
+
+    let discountPercent = 0;
+    let discountLabel = '';
+
+    if (hasDiscount && selectedDiscountVal && selectedDiscountVal !== '') {
+        if (selectedDiscountVal === 'custom') {
+            const discountPercentInput = document.getElementById('tuitionUnitsDiscountPercent');
+            const dpVal = discountPercentInput ? parseFloat(discountPercentInput.value.replace(/[^0-9.]/g, '')) : 0;
+            discountPercent = !isNaN(dpVal) ? Math.min(100, Math.max(0, dpVal)) : 0;
+            discountLabel = 'خصم مخصص';
+        } else if (selectedOption && selectedOption.dataset && selectedOption.dataset.percent !== undefined) {
+            discountPercent = Math.min(100, Math.max(0, parseFloat(selectedOption.dataset.percent) || 0));
+            discountLabel = selectedDiscountOptionText;
+        } else {
+            discountLabel = selectedDiscountOptionText;
+        }
+    }
+
+    // Second Discount Option
+    const discount2Toggle = document.getElementById('tuitionUnitsDiscount2Toggle');
+    const hasDiscount2 = hasDiscount && discount2Toggle && discount2Toggle.checked;
+
+    const discount2TypeSelect = document.getElementById('tuitionUnitsDiscount2Type');
+    const selected2Option = discount2TypeSelect?.options[discount2TypeSelect.selectedIndex];
+    const selected2DiscountVal = discount2TypeSelect ? discount2TypeSelect.value : '';
+    const selected2DiscountOptionText = selected2Option ? selected2Option.text : '';
+
+    let discount2Percent = 0;
+    let discount2Label = '';
+
+    if (hasDiscount2 && selected2DiscountVal && selected2DiscountVal !== '') {
+        if (selected2DiscountVal === 'custom') {
+            const discount2PercentInput = document.getElementById('tuitionUnitsDiscount2Percent');
+            const dp2Val = discount2PercentInput ? parseFloat(discount2PercentInput.value.replace(/[^0-9.]/g, '')) : 0;
+            discount2Percent = !isNaN(dp2Val) ? Math.min(100, Math.max(0, dp2Val)) : 0;
+            discount2Label = 'خصم ثانٍ مخصص';
+        } else if (selected2Option && selected2Option.dataset && selected2Option.dataset.percent !== undefined) {
+            discount2Percent = Math.min(100, Math.max(0, parseFloat(selected2Option.dataset.percent) || 0));
+            discount2Label = selected2DiscountOptionText;
+        } else {
+            discount2Label = selected2DiscountOptionText;
+        }
+    }
+
+    const postponeToggle = document.getElementById('tuitionPostponeToggle');
+    const hasPostpone = postponeToggle ? postponeToggle.checked : false;
+    const postponeFee = hasPostpone ? Math.round(baseFee * 0.10) : 0;
+
+    const baseCalculated = Math.round((totalUnits / 60) * baseFee);
+    const discount1Amount = (hasDiscount && discountPercent > 0) ? Math.round(baseCalculated * (discountPercent / 100)) : 0;
+    const afterDiscount1 = Math.max(0, baseCalculated - discount1Amount);
+
+    const discount2Amount = (hasDiscount2 && discount2Percent > 0) ? Math.round(afterDiscount1 * (discount2Percent / 100)) : 0;
+    const finalFeeUnits = Math.max(0, afterDiscount1 - discount2Amount);
+    const totalDiscountAmount = discount1Amount + discount2Amount;
+    const anyDiscountActive = (hasDiscount && discountPercent > 0);
+    const bothDiscountsActive = anyDiscountActive && (hasDiscount2 && discount2Percent > 0);
+    const finalGrandTotal = finalFeeUnits + postponeFee;
+
+    try {
+        if (currentTuitionMode === 'units') {
+            history.replaceState({ screen: 'tuition-calc', mode: 'units', type: studyType }, '', getAppPath('tuition-calc', '', studyType, 'units'));
+        }
+    } catch (e) {}
+
+    resultsArea.innerHTML = `
+        <div class="ql-target-card tuition-target-card">
+            <div class="ql-target-header">
+                <div class="ql-target-title-block">
+                    <h3 class="ql-target-name-ar">إجمالي الوحدات المسجلة: ${totalUnits} وحدة</h3>
+                    <span class="ql-target-name-en">الكورس الأول: ${c1} وحدة • الكورس الثاني: ${c2} وحدة</span>
+                </div>
+            </div>
+            <div class="ql-target-meta-badges">
+                <span class="ql-pill-ects">مجموع ${totalUnits} وحدة</span>
+                <span class="tuition-pill-study">🏛️ ${studyTypeName}</span>
+                <span class="ql-pill-stage">💵 القسط السنوي: ${formatNumberIQD(baseFee)} د.ع</span>
+                ${hasPostpone ? `
+                    <span class="tuition-pill-postpone">⏸️ تأجيل عام (+${formatNumberIQD(postponeFee)} د.ع)</span>
+                ` : ''}
+            </div>
+        </div>
+
+        <div class="fees-grand-total-box">
+            ${bothDiscountsActive ? `
+                <div class="tuition-discount-banner">
+                    <span>🎉 تم تطبيق الخصم الأول (${discountPercent}%) والخصم الثاني (${discount2Percent}%) - ${finalFeeUnits === 0 ? 'إعفاء تام من أجور الوحدات' : `إجمالي المخصوم: ${formatNumberIQD(totalDiscountAmount)} دينار`}${hasPostpone ? ' • مع رسوم تأجيل' : ''}</span>
+                </div>
+            ` : (anyDiscountActive ? `
+                <div class="tuition-discount-banner">
+                    <span>🎉 تم تطبيق ${discountLabel || 'الخصم'} (${discountPercent}%) - ${finalFeeUnits === 0 ? 'إعفاء تام من أجور الوحدات' : `المبلغ المخصوم: ${formatNumberIQD(discount1Amount)} دينار`}${hasPostpone ? ' • مع رسوم تأجيل' : ''}</span>
+                </div>
+            ` : (hasPostpone ? `
+                <div class="tuition-discount-banner" style="background: #fef3c7; color: #92400e; border-color: #fcd34d;">
+                    <span>⏸️ تم احتساب رسوم تأجيل العام الدراسي: ${formatNumberIQD(postponeFee)} دينار (10% من القسط)</span>
+                </div>
+            ` : (hasDiscount && !selectedDiscountVal ? `
+                <div class="tuition-discount-banner" style="background: #fef9c3; color: #854d0e; border-color: #fde047;">
+                    <span>🏷️ يرجى اختيار نوع الخصم لتطبيقه على القسط</span>
+                </div>
+            ` : '')))}
+
+            <span class="fees-total-badge">💰 المبلغ الإجمالي المطلوب للقسط الدراسي</span>
+            <div class="fees-total-number-row">
+                ${anyDiscountActive ? `
+                    <span class="tuition-strike-price">${formatNumberIQD(baseCalculated + postponeFee)} د.ع</span>
+                ` : ''}
+                <span class="fees-total-number">${formatNumberIQD(finalGrandTotal)}</span>
+                <span class="fees-currency-symbol">دينار عراقي</span>
+            </div>
+            <div class="fees-tafqeet-text">
+                <span>(فقط ${tafqeetIQD(finalGrandTotal)} لا غير)</span>
+            </div>
+
+            ${(anyDiscountActive || hasPostpone) ? `
+                <div class="tuition-discount-breakdown-card">
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">أجور الوحدات (${totalUnits} وحدة):</span>
+                        <span class="breakdown-val">${formatNumberIQD(baseCalculated)} د.ع</span>
+                    </div>
+                    ${anyDiscountActive && !bothDiscountsActive ? `
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">قيمة الخصم المستقطعة (${discountPercent}%):</span>
+                            <span class="breakdown-val breakdown-discount-val">-${formatNumberIQD(discount1Amount)} د.ع</span>
+                        </div>
+                    ` : ''}
+                    ${bothDiscountsActive ? `
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">قيمة الخصم الأول (${discountPercent}%):</span>
+                            <span class="breakdown-val breakdown-discount-val">-${formatNumberIQD(discount1Amount)} د.ع</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">المتبقي بعد الخصم الأول:</span>
+                            <span class="breakdown-val">${formatNumberIQD(afterDiscount1)} د.ع</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">قيمة الخصم الثاني (${discount2Percent}% من المتبقي):</span>
+                            <span class="breakdown-val breakdown-discount-val">-${formatNumberIQD(discount2Amount)} د.ع</span>
+                        </div>
+                    ` : ''}
+                    ${anyDiscountActive ? `
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">صافي أجور الوحدات بعد الخصم:</span>
+                            <span class="breakdown-val" style="color: #0d9488;">${formatNumberIQD(finalFeeUnits)} د.ع</span>
+                        </div>
+                    ` : ''}
+                    ${hasPostpone ? `
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">رسوم تأجيل العام الدراسي (10% من القسط):</span>
+                            <span class="breakdown-val" style="color: #d97706;">+${formatNumberIQD(postponeFee)} د.ع</span>
+                        </div>
+                    ` : ''}
+                    <div class="breakdown-item" style="grid-column: 1 / -1; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span class="breakdown-label">المبلغ النهائي الصافي المطلوب:</span>
+                        <span class="breakdown-val" style="color: #0d9488; font-size: 1.25rem;">${formatNumberIQD(finalGrandTotal)} د.ع</span>
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Formula Box -->
+            <div class="fees-formula-card">
+                <div class="fees-formula-header">
+                    <span class="fees-formula-type-badge">${studyTypeName} • بالاعتماد على عدد الوحدات</span>
+                </div>
+                <div class="fees-formula-body">
+                    <div class="fees-formula-row">
+                        <span class="fees-formula-label">المعادلة:</span>
+                        <div class="fees-formula-text" dir="rtl">
+                            <span class="fees-math-token">(عدد الوحدات الكلي / 60)</span>
+                            <span class="fees-math-op">×</span>
+                            <span class="fees-math-token">قيمة القسط</span>
+                            ${anyDiscountActive && !bothDiscountsActive ? `
+                                <span class="fees-math-op">-</span>
+                                <span class="fees-math-token">الخصم <bdi>(${discountPercent}%)</bdi></span>
+                            ` : ''}
+                            ${bothDiscountsActive ? `
+                                <span class="fees-math-op">-</span>
+                                <span class="fees-math-token">الخصم الأول <bdi>(${discountPercent}%)</bdi></span>
+                                <span class="fees-math-op">-</span>
+                                <span class="fees-math-token">الخصم الثاني <bdi>(${discount2Percent}% من المتبقي)</bdi></span>
+                            ` : ''}
+                            ${hasPostpone ? `
+                                <span class="fees-math-op">+</span>
+                                <span class="fees-math-token">رسوم التأجيل <bdi>(10%)</bdi></span>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="fees-formula-eval-box">
+                        <div class="fees-eval-top-row">
+                            <span class="fees-formula-label">التطبيق:</span>
+                            <div class="tuition-eval-units-chips">
+                                <span class="tuition-unit-chip">📘 كورس 1: <strong>${c1}</strong></span>
+                                <span class="tuition-unit-chip">📗 كورس 2: <strong>${c2}</strong></span>
+                                <span class="tuition-unit-chip chip-total">📊 المجموع: <strong>${totalUnits} وحدة</strong></span>
+                            </div>
+                        </div>
+                        <div class="fees-eval-math-row">
+                            <div class="tuition-math-steps-card">
+                                <div class="tuition-math-step-row">
+                                    <span class="math-step-calc">(${totalUnits} / 60) × ${formatNumberIQD(baseFee)} د.ع</span>
+                                    <span class="math-step-eq">=</span>
+                                    <span class="math-step-val">${formatNumberIQD(baseCalculated)} د.ع</span>
+                                </div>
+                                ${anyDiscountActive && !bothDiscountsActive ? `
+                                    <div class="tuition-math-step-row discount-row">
+                                        <span class="math-step-calc">${formatNumberIQD(baseCalculated)} - ${formatNumberIQD(discount1Amount)} <span class="math-step-tag" dir="rtl">[خصم: ${discountPercent}%]</span></span>
+                                        <span class="math-step-eq">=</span>
+                                        <span class="math-step-val ${hasPostpone ? '' : 'final-val'}">${formatNumberIQD(finalFeeUnits)} د.ع</span>
+                                    </div>
+                                ` : ''}
+                                ${bothDiscountsActive ? `
+                                    <div class="tuition-math-step-row discount-row">
+                                        <span class="math-step-calc">${formatNumberIQD(baseCalculated)} - ${formatNumberIQD(discount1Amount)} <span class="math-step-tag" dir="rtl">[خصم أول: ${discountPercent}%]</span></span>
+                                        <span class="math-step-eq">=</span>
+                                        <span class="math-step-val">${formatNumberIQD(afterDiscount1)} د.ع</span>
+                                    </div>
+                                    <div class="tuition-math-step-row discount-row">
+                                        <span class="math-step-calc">${formatNumberIQD(afterDiscount1)} - ${formatNumberIQD(discount2Amount)} <span class="math-step-tag tag-second" dir="rtl">[خصم ثانٍ: ${discount2Percent}%]</span></span>
+                                        <span class="math-step-eq">=</span>
+                                        <span class="math-step-val ${hasPostpone ? '' : 'final-val'}">${formatNumberIQD(finalFeeUnits)} د.ع</span>
+                                    </div>
+                                ` : ''}
+                                ${hasPostpone ? `
+                                    <div class="tuition-math-step-row postpone-row">
+                                        <span class="math-step-calc">${formatNumberIQD(finalFeeUnits)} + ${formatNumberIQD(postponeFee)} <span class="math-step-tag tag-postpone" dir="rtl">[رسوم تأجيل: 10%]</span></span>
+                                        <span class="math-step-eq">=</span>
+                                        <span class="math-step-val final-val">${formatNumberIQD(finalGrandTotal)} د.ع</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function populateTuitionSubjects() {
+    const stageSelect = document.getElementById('tuitionSubStageSelect');
+    const courseSelect = document.getElementById('tuitionSubCourseSelect');
+    const subjectSelect = document.getElementById('tuitionSubSubjectSelect');
+    const resultsArea = document.getElementById('tuitionSubResultsArea');
+    if (!stageSelect || !courseSelect || !subjectSelect) return;
+
+    const stageVal = stageSelect.value;
+    const courseVal = courseSelect.value;
+
+    if (!stageVal || !courseVal) {
+        subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+        if (resultsArea) {
+            resultsArea.innerHTML = `
+                <div class="ql-empty-state-box">
+                    <span class="ql-empty-icon">💡</span>
+                    <p class="ql-empty-text">يرجى اختيار نوع الدراسة، والمرحلة والكورس، ثم المادة لاحتساب أجورها بدقة.</p>
+                </div>
+            `;
+        }
+        return;
+    }
+
+    const stageNum = parseInt(stageVal, 10);
+    const courseNum = parseInt(courseVal, 10);
+    const targetSem = (stageNum - 1) * 2 + courseNum;
+
+    const subjectsInSem = curriculumData.filter(c => c.sem === targetSem);
+    subjectSelect.innerHTML = '<option value="" disabled selected>اختر المادة</option>';
+
+    subjectsInSem.forEach((sub) => {
+        const opt = document.createElement('option');
+        opt.value = sub.code;
+        opt.textContent = sub.nameAr;
+        subjectSelect.appendChild(opt);
+    });
+
+    if (resultsArea) {
+        resultsArea.innerHTML = `
+            <div class="ql-empty-state-box">
+                <span class="ql-empty-icon">📚</span>
+                <p class="ql-empty-text">اختر الآن إحدى مواد الكورس من القائمة أعلاه لاحتساب أجورها.</p>
+            </div>
+        `;
+    }
+}
+
+function loadTuitionSubjectByCode(code, studyType = '') {
+    const subject = curriculumMap[code];
+    if (!subject) return;
+
+    const studySelect = document.getElementById('tuitionSubStudyType');
+    const stageSelect = document.getElementById('tuitionSubStageSelect');
+    const courseSelect = document.getElementById('tuitionSubCourseSelect');
+    const subjectSelect = document.getElementById('tuitionSubSubjectSelect');
+
+    if (stageSelect && courseSelect && subjectSelect) {
+        if (studySelect && studyType) {
+            studySelect.value = studyType;
+        }
+
+        const stageNum = Math.ceil(subject.sem / 2);
+        const courseNum = (subject.sem % 2 !== 0) ? 1 : 2;
+
+        stageSelect.value = stageNum.toString();
+        courseSelect.value = courseNum.toString();
+
+        populateTuitionSubjects();
+
+        subjectSelect.value = subject.code;
+        calculateAndRenderTuitionSubject();
+    }
+}
+
+function calculateAndRenderTuitionSubject() {
+    const subjectSelect = document.getElementById('tuitionSubSubjectSelect');
+    const resultsArea = document.getElementById('tuitionSubResultsArea');
+    if (!resultsArea) return;
+
+    if (!subjectSelect || !subjectSelect.value) {
+        resultsArea.innerHTML = `
+            <div class="ql-empty-state-box">
+                <span class="ql-empty-icon">💡</span>
+                <p class="ql-empty-text">يرجى اختيار المرحلة والكورس ثم المادة لحساب أجورها المقررة.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const selectedCode = subjectSelect.value;
+    const subject = curriculumMap[selectedCode];
+    if (!subject) return;
+
+    const studySelect = document.getElementById('tuitionSubStudyType');
+    const studyType = studySelect ? studySelect.value : 'evening';
+    const studyTypeName = (studyType === 'morning_parallel') ? 'صباحي (خاص / موازي)' : 'مسائي';
+    const baseFee = TUITION_ANNUAL_FEE;
+
+    const stageNum = Math.ceil(subject.sem / 2);
+    const stageName = getStageName(stageNum);
+    const courseTitle = getCourseName(subject.sem);
+    const fullOriginName = `${stageName} - ${courseTitle}`;
+
+    const ects = subject.ects;
+    const totalFee = Math.round((ects / 60) * baseFee);
+
+    try {
+        if (currentTuitionMode === 'subject') {
+            history.replaceState({ screen: 'tuition-calc', mode: 'subject', subject: selectedCode, type: studyType }, '', getAppPath('tuition-calc', selectedCode, studyType, 'subject'));
+        }
+    } catch (e) {}
+
+    resultsArea.innerHTML = `
+        <div class="ql-target-card tuition-target-card">
+            <div class="ql-target-header">
+                <div class="ql-target-title-block">
+                    <h3 class="ql-target-name-ar">${subject.nameAr}</h3>
+                    <span class="ql-target-name-en">${subject.nameEn}</span>
+                </div>
+                <div class="ql-target-action-block">
+                    <button type="button" class="btn-share-ql-icon" id="btnShareTuitionSubject" title="نسخ رابط أجور المادة المباشر">
+                        <span>🔗</span>
+                    </button>
+                </div>
+            </div>
+            <div class="ql-target-meta-badges">
+                <span class="ql-pill-ects">${formatUnits(subject.ects)}</span>
+                <span class="ql-pill-stage">${fullOriginName}</span>
+                <span class="tuition-pill-study">🏛️ ${studyTypeName}</span>
+                <span class="ql-pill-stage">💵 القسط السنوي: ${formatNumberIQD(baseFee)} د.ع</span>
+            </div>
+        </div>
+
+        <div class="fees-grand-total-box">
+            <span class="fees-total-badge">💰 المبلغ المطلوب لأجور مادة (${subject.nameAr})</span>
+            <div class="fees-total-number-row">
+                <span class="fees-total-number">${formatNumberIQD(totalFee)}</span>
+                <span class="fees-currency-symbol">دينار عراقي</span>
+            </div>
+            <div class="fees-tafqeet-text">
+                <span>(فقط ${tafqeetIQD(totalFee)} لا غير)</span>
+            </div>
+
+            <!-- Formula Box -->
+            <div class="fees-formula-card">
+                <div class="fees-formula-header">
+                    <span class="fees-formula-type-badge">${studyTypeName} • احتساب أجور مادة</span>
+                </div>
+                <div class="fees-formula-body">
+                    <div class="fees-formula-row">
+                        <span class="fees-formula-label">المعادلة:</span>
+                        <div class="fees-formula-text" dir="rtl">
+                            <span class="fees-math-token">(عدد وحدات المادة / 60)</span>
+                            <span class="fees-math-op">×</span>
+                            <span class="fees-math-token">قيمة القسط السنوي</span>
+                        </div>
+                    </div>
+                    <div class="fees-formula-eval-box">
+                        <div class="fees-eval-top-row">
+                            <span class="fees-formula-label">التطبيق:</span>
+                            <div class="tuition-eval-units-chips">
+                                <span class="tuition-unit-chip chip-total">📚 وحدات المادة: <strong>${ects} وحدة</strong></span>
+                            </div>
+                        </div>
+                        <div class="fees-eval-math-row">
+                            <div class="tuition-math-steps-card">
+                                <div class="tuition-math-step-row">
+                                    <span class="math-step-calc">(${ects} / 60) × ${formatNumberIQD(baseFee)} د.ع</span>
+                                    <span class="math-step-eq">=</span>
+                                    <span class="math-step-val final-val">${formatNumberIQD(totalFee)} د.ع</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const btnShare = document.getElementById('btnShareTuitionSubject');
+    if (btnShare) {
+        btnShare.addEventListener('click', async () => {
+            const originBase = `${window.location.origin}${window.location.pathname.replace(/\/index\.html$/, '')}`;
+            const cleanBase = originBase.endsWith('/') ? originBase.slice(0, -1) : originBase;
+            const shareUrl = window.location.protocol.startsWith('http')
+                ? `${cleanBase}/?tuition-calc&mode=subject&type=${studyType}&subject=${subject.code}`
+                : `${window.location.href.split('?')[0].split('#')[0]}?tuition-calc&mode=subject&type=${studyType}&subject=${subject.code}`;
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+            } catch (err) {
+                const tempInput = document.createElement('input');
+                tempInput.value = shareUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+            }
+
+            showAppToast('تم نسخ الرابط المباشر لأجور المادة');
+        });
+    }
+}
+
+// --------------------------------------------------------------------------
 // 5. Initializers & Events
 // --------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
@@ -2781,6 +3617,192 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnBackFees = document.getElementById('btnBackFromFeesCalc');
     if (btnBackFees) {
         btnBackFees.addEventListener('click', closeFeesCalculatorScreen);
+    }
+
+    // Tuition Calculator Listeners
+    const btnOpenTuition = document.getElementById('btnOpenTuitionCalc');
+    if (btnOpenTuition) {
+        btnOpenTuition.addEventListener('click', openTuitionCalculatorScreen);
+    }
+
+    const btnBackTuition = document.getElementById('btnBackFromTuitionCalc');
+    if (btnBackTuition) {
+        btnBackTuition.addEventListener('click', closeTuitionCalculatorScreen);
+    }
+
+    const btnModeUnits = document.getElementById('btnTuitionModeUnits');
+    if (btnModeUnits) {
+        btnModeUnits.addEventListener('click', () => switchTuitionMode('units'));
+    }
+
+    const btnModeSubject = document.getElementById('btnTuitionModeSubject');
+    if (btnModeSubject) {
+        btnModeSubject.addEventListener('click', () => switchTuitionMode('subject'));
+    }
+
+    // Units Mode Inputs (Reactive Text Inputs)
+    const tuitionUnitsStudyType = document.getElementById('tuitionUnitsStudyType');
+    if (tuitionUnitsStudyType) {
+        populateTuitionDiscounts(tuitionUnitsStudyType.value || 'evening');
+        tuitionUnitsStudyType.addEventListener('change', () => {
+            populateTuitionDiscounts(tuitionUnitsStudyType.value);
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    const tuitionCourse1Units = document.getElementById('tuitionCourse1Units');
+    if (tuitionCourse1Units) {
+        tuitionCourse1Units.addEventListener('input', () => {
+            const clean = tuitionCourse1Units.value.replace(/[^0-9.]/g, '');
+            const val = parseFloat(clean);
+            if (!isNaN(val) && val > 30) {
+                tuitionCourse1Units.value = '30';
+            }
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    const tuitionCourse2Units = document.getElementById('tuitionCourse2Units');
+    if (tuitionCourse2Units) {
+        tuitionCourse2Units.addEventListener('input', () => {
+            const clean = tuitionCourse2Units.value.replace(/[^0-9.]/g, '');
+            const val = parseFloat(clean);
+            if (!isNaN(val) && val > 30) {
+                tuitionCourse2Units.value = '30';
+            }
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    const tuitionUnitsDiscountToggle = document.getElementById('tuitionUnitsDiscountToggle');
+    if (tuitionUnitsDiscountToggle) {
+        tuitionUnitsDiscountToggle.addEventListener('change', () => {
+            const box = document.getElementById('tuitionUnitsDiscountBox');
+            const card = tuitionUnitsDiscountToggle.closest('.tuition-discount-card');
+            const discountTypeSelect = document.getElementById('tuitionUnitsDiscountType');
+            const customWrapper = document.getElementById('tuitionUnitsCustomDiscountWrapper');
+            const discount2Toggle = document.getElementById('tuitionUnitsDiscount2Toggle');
+            const discount2Box = document.getElementById('tuitionUnitsDiscount2Box');
+
+            if (box) box.style.display = tuitionUnitsDiscountToggle.checked ? 'flex' : 'none';
+            if (card) {
+                if (tuitionUnitsDiscountToggle.checked) card.classList.add('active-discount');
+                else card.classList.remove('active-discount');
+            }
+            if (customWrapper && discountTypeSelect) {
+                customWrapper.style.display = (tuitionUnitsDiscountToggle.checked && discountTypeSelect.value === 'custom') ? 'flex' : 'none';
+            }
+            if (!tuitionUnitsDiscountToggle.checked) {
+                if (discount2Toggle) discount2Toggle.checked = false;
+                if (discount2Box) discount2Box.style.display = 'none';
+            }
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    const tuitionUnitsDiscountType = document.getElementById('tuitionUnitsDiscountType');
+    if (tuitionUnitsDiscountType) {
+        tuitionUnitsDiscountType.addEventListener('change', () => {
+            const customWrapper = document.getElementById('tuitionUnitsCustomDiscountWrapper');
+            if (customWrapper) {
+                const isCustom = tuitionUnitsDiscountType.value === 'custom';
+                customWrapper.style.display = isCustom ? 'flex' : 'none';
+                if (isCustom) {
+                    const customInput = document.getElementById('tuitionUnitsDiscountPercent');
+                    if (customInput) customInput.focus();
+                }
+            }
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    const tuitionUnitsDiscountPercent = document.getElementById('tuitionUnitsDiscountPercent');
+    if (tuitionUnitsDiscountPercent) {
+        tuitionUnitsDiscountPercent.addEventListener('input', () => {
+            const clean = tuitionUnitsDiscountPercent.value.replace(/[^0-9.]/g, '');
+            const val = parseFloat(clean);
+            if (!isNaN(val) && val > 100) {
+                tuitionUnitsDiscountPercent.value = '100';
+            }
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    // Second Discount Event Listeners
+    const tuitionUnitsDiscount2Toggle = document.getElementById('tuitionUnitsDiscount2Toggle');
+    if (tuitionUnitsDiscount2Toggle) {
+        tuitionUnitsDiscount2Toggle.addEventListener('change', () => {
+            const box2 = document.getElementById('tuitionUnitsDiscount2Box');
+            const discount2TypeSelect = document.getElementById('tuitionUnitsDiscount2Type');
+            const customWrapper2 = document.getElementById('tuitionUnitsCustomDiscount2Wrapper');
+            if (box2) box2.style.display = tuitionUnitsDiscount2Toggle.checked ? 'flex' : 'none';
+            if (customWrapper2 && discount2TypeSelect) {
+                customWrapper2.style.display = (tuitionUnitsDiscount2Toggle.checked && discount2TypeSelect.value === 'custom') ? 'flex' : 'none';
+            }
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    const tuitionUnitsDiscount2Type = document.getElementById('tuitionUnitsDiscount2Type');
+    if (tuitionUnitsDiscount2Type) {
+        tuitionUnitsDiscount2Type.addEventListener('change', () => {
+            const customWrapper2 = document.getElementById('tuitionUnitsCustomDiscount2Wrapper');
+            if (customWrapper2) {
+                const isCustom = tuitionUnitsDiscount2Type.value === 'custom';
+                customWrapper2.style.display = isCustom ? 'flex' : 'none';
+                if (isCustom) {
+                    const customInput2 = document.getElementById('tuitionUnitsDiscount2Percent');
+                    if (customInput2) customInput2.focus();
+                }
+            }
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    const tuitionUnitsDiscount2Percent = document.getElementById('tuitionUnitsDiscount2Percent');
+    if (tuitionUnitsDiscount2Percent) {
+        tuitionUnitsDiscount2Percent.addEventListener('input', () => {
+            const clean = tuitionUnitsDiscount2Percent.value.replace(/[^0-9.]/g, '');
+            const val = parseFloat(clean);
+            if (!isNaN(val) && val > 100) {
+                tuitionUnitsDiscount2Percent.value = '100';
+            }
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    // Postponement Toggle Listener
+    const tuitionPostponeToggle = document.getElementById('tuitionPostponeToggle');
+    if (tuitionPostponeToggle) {
+        tuitionPostponeToggle.addEventListener('change', () => {
+            const card = tuitionPostponeToggle.closest('.tuition-postpone-card');
+            if (card) {
+                if (tuitionPostponeToggle.checked) card.classList.add('active-postpone');
+                else card.classList.remove('active-postpone');
+            }
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    // Subject Mode Inputs
+    const tuitionSubStudyType = document.getElementById('tuitionSubStudyType');
+    if (tuitionSubStudyType) {
+        tuitionSubStudyType.addEventListener('change', calculateAndRenderTuitionSubject);
+    }
+
+    const tuitionSubStageSelect = document.getElementById('tuitionSubStageSelect');
+    if (tuitionSubStageSelect) {
+        tuitionSubStageSelect.addEventListener('change', populateTuitionSubjects);
+    }
+
+    const tuitionSubCourseSelect = document.getElementById('tuitionSubCourseSelect');
+    if (tuitionSubCourseSelect) {
+        tuitionSubCourseSelect.addEventListener('change', populateTuitionSubjects);
+    }
+
+    const tuitionSubSubjectSelect = document.getElementById('tuitionSubSubjectSelect');
+    if (tuitionSubSubjectSelect) {
+        tuitionSubSubjectSelect.addEventListener('change', calculateAndRenderTuitionSubject);
     }
 
     const btnReturnHome = document.getElementById('btnReturnToHome');
@@ -2910,6 +3932,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const studySelect = document.getElementById('feesStudyTypeSelect');
                 if (studySelect) studySelect.value = sType;
             }
+        } else if (stateScreen === 'tuition-calc' || urlStr.includes('tuition-calc') || urlStr.includes('screen=tuition-calc')) {
+            openTuitionCalculatorScreen(false);
         } else if (match && match[1] && curriculumMap[match[1]]) {
             openQuickLookScreen(false);
             loadQuickLookSubjectByCode(match[1]);
@@ -2926,7 +3950,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialUrl = window.location.href;
         const match = initialUrl.match(/[?&#]subject=([A-Za-z0-9]+)/) || initialUrl.match(/[?&#]code=([A-Za-z0-9]+)/);
 
-        if (match || initialUrl.includes('fees-calc') || initialUrl.includes('screen=fees-calc') || initialUrl.includes('quick-look') || initialUrl.includes('screen=quick-look') || initialUrl.includes('simulation') || initialUrl.includes('screen=simulation')) {
+        if (match || initialUrl.includes('fees-calc') || initialUrl.includes('screen=fees-calc') || initialUrl.includes('tuition-calc') || initialUrl.includes('screen=tuition-calc') || initialUrl.includes('quick-look') || initialUrl.includes('screen=quick-look') || initialUrl.includes('simulation') || initialUrl.includes('screen=simulation')) {
             handleHistoryNavigation();
         } else {
             history.replaceState({ screen: 'welcome' }, '', getAppPath('welcome'));

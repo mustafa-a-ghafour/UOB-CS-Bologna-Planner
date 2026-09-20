@@ -199,150 +199,206 @@
                     </div>
                 </div>
 
-                <!-- 2. Choices Indicator Header -->
-                <div class="welcome-choices-header">
-                    <div class="choices-indicator-badge">
-                        <span class="indicator-icon">🎯</span>
-                        <span>إختر الاداة:</span>
+                <!-- Category 1: Academic & Study Planning Tools -->
+                <div class="welcome-category-section">
+                    <div class="welcome-category-header">
+                        <div class="category-indicator-badge badge-cat-academic">
+                            <span class="indicator-icon">📚</span>
+                            <span>الأدوات الأكاديمية والتخطيط الدراسي</span>
+                        </div>
+                        <div class="category-indicator-line line-academic"></div>
                     </div>
-                    <div class="choices-indicator-line"></div>
+
+                    <div class="welcome-bento-grid">
+                        <!-- Bento Card 1: Simulation Mode -->
+                        <div class="bento-card bento-sim-card">
+                            <div class="bento-card-glow glow-sim"></div>
+                            <div class="bento-card-header">
+                                <div class="bento-icon-box icon-sim">
+                                    <span>🎓</span>
+                                </div>
+                                <div class="bento-title-group">
+                                    <span class="bento-sub-badge badge-sim">المحاكي التفاعلي</span>
+                                    <h2 class="bento-card-title">محاكي المسار الدراسي</h2>
+                                </div>
+                            </div>
+
+                            <p class="bento-card-desc">
+                                محاكاة تفاعلية شاملة لمسيرتك الجامعية، تتيح لك تجربة قرارات التسجيل، واختبار أثر الرسوب التكويني على مسار التخرج واحتساب السنين والوحدات بدقة.
+                            </p>
+
+                            <div class="bento-chips-list">
+                                <div class="bento-chip">
+                                    <span class="chip-icon">⚡</span>
+                                    <span>حساب داينميكي ومباشر لعدد الوحدات</span>
+                                </div>
+                                <div class="bento-chip">
+                                    <span class="chip-icon">🎯</span>
+                                    <span>مرونة كاملة في اختيار وتسجيل المواد وتجربة القرارات</span>
+                                </div>
+                                <div class="bento-chip">
+                                    <span class="chip-icon">📜</span>
+                                    <span>تصدير مسار الطالب النهائي كصور</span>
+                                </div>
+                            </div>
+
+                            <div class="bento-action-wrapper">
+                                <button id="btnStartSimulation" class="btn-bento-action btn-bento-sim" type="button">
+                                    <span class="btn-content">
+                                        <span class="btn-icon">🚀</span>
+                                        <span class="btn-text">بدء المحاكاة التفاعلية</span>
+                                    </span>
+                                    <span class="btn-arrow-icon">←</span>
+                                    <span class="btn-shine-sweep"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Bento Card 2: Quick Look Mode -->
+                        <div class="bento-card bento-ql-card">
+                            <div class="bento-card-glow glow-ql"></div>
+                            <div class="bento-card-header">
+                                <div class="bento-icon-box icon-ql">
+                                    <span>🔍</span>
+                                </div>
+                                <div class="bento-title-group">
+                                    <span class="bento-sub-badge badge-ql">استكشاف فوري للمواد</span>
+                                    <h2 class="bento-card-title">النظرة السريعة وشجرة الارتباطات</h2>
+                                </div>
+                            </div>
+
+                            <p class="bento-card-desc">
+                                استكشف شبكة المواد التمهيدية مباشرة دون الحاجة لبدء محاكاة، وافحص تأثير الحرمان المباشر والمتسلسل لأي مادة في الخطة.
+                            </p>
+
+                            <div class="bento-chips-list">
+                                <div class="bento-chip">
+                                    <span class="chip-icon">🔑</span>
+                                    <span>كشف المواد التمهيدية لكل مادة</span>
+                                </div>
+                                <div class="bento-chip">
+                                    <span class="chip-icon">🚨</span>
+                                    <span>معرفة المواد المرتبطة بالكورس القادم والكورسات اللاحقة</span>
+                                </div>
+                                <div class="bento-chip">
+                                    <span class="chip-icon">⛓️</span>
+                                    <span>تتبع سلاسل الاعتماد الأكاديمي التراكمي</span>
+                                </div>
+                            </div>
+
+                            <div class="bento-action-wrapper">
+                                <button id="btnOpenQuickLook" class="btn-bento-action btn-bento-ql" type="button">
+                                    <span class="btn-content">
+                                        <span class="btn-icon">🔍</span>
+                                        <span class="btn-text">نظرة سريعة</span>
+                                    </span>
+                                    <span class="btn-arrow-icon">←</span>
+                                    <span class="btn-shine-sweep"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- 3. Bento Action Showcase Grid (Simulator & Quick Look) -->
-                <div class="welcome-bento-grid">
-                    
-                    <!-- Bento Card 1: Simulation Mode -->
-                    <div class="bento-card bento-sim-card">
-                        <div class="bento-card-glow glow-sim"></div>
-                        <div class="bento-card-header">
-                            <div class="bento-icon-box icon-sim">
-                                <span>🎓</span>
-                            </div>
-                            <div class="bento-title-group">
-                                <span class="bento-sub-badge badge-sim">المحاكي التفاعلي</span>
-                                <h2 class="bento-card-title">محاكي المسار الدراسي</h2>
-                            </div>
+                <!-- Category 2: Financial & Fees Calculators -->
+                <div class="welcome-category-section">
+                    <div class="welcome-category-header">
+                        <div class="category-indicator-badge badge-cat-financial">
+                            <span class="indicator-icon">💳</span>
+                            <span>الأدوات المالية واحتساب الأجور</span>
                         </div>
-
-                        <p class="bento-card-desc">
-                            محاكاة تفاعلية شاملة لمسيرتك الجامعية، تتيح لك تجربة قرارات التسجيل، واختبار أثر الرسوب التكويني على مسار التخرج واحتساب السنين والوحدات بدقة.
-                        </p>
-
-                        <div class="bento-chips-list">
-                            <div class="bento-chip">
-                                <span class="chip-icon">⚡</span>
-                                <span>حساب داينميكي ومباشر لعدد الوحدات</span>
-                            </div>
-                            <div class="bento-chip">
-                                <span class="chip-icon">🎯</span>
-                                <span>مرونة كاملة في اختيار وتسجيل المواد وتجربة القرارات</span>
-                            </div>
-                            <div class="bento-chip">
-                                <span class="chip-icon">📜</span>
-                                <span>تصدير مسار الطالب النهائي كصور</span>
-                            </div>
-                        </div>
-
-                        <div class="bento-action-wrapper">
-                            <button id="btnStartSimulation" class="btn-bento-action btn-bento-sim" type="button">
-                                <span class="btn-content">
-                                    <span class="btn-icon">🚀</span>
-                                    <span class="btn-text">بدء المحاكاة التفاعلية</span>
-                                </span>
-                                <span class="btn-arrow-icon">←</span>
-                                <span class="btn-shine-sweep"></span>
-                            </button>
-                        </div>
+                        <div class="category-indicator-line line-financial"></div>
                     </div>
 
-                    <!-- Bento Card 2: Quick Look Mode -->
-                    <div class="bento-card bento-ql-card">
-                        <div class="bento-card-glow glow-ql"></div>
-                        <div class="bento-card-header">
-                            <div class="bento-icon-box icon-ql">
-                                <span>🔍</span>
+                    <div class="welcome-bento-grid">
+                        <!-- Bento Card 1: Tuition Fees Calculator Mode (Placed First) -->
+                        <div class="bento-card bento-tuition-card">
+                            <div class="bento-card-glow glow-tuition"></div>
+                            <div class="bento-card-header">
+                                <div class="bento-icon-box icon-tuition">
+                                    <span>💳</span>
+                                </div>
+                                <div class="bento-title-group">
+                                    <span class="bento-sub-badge badge-tuition">أجور القسط الدراسي</span>
+                                    <h2 class="bento-card-title">حاسبة أقساط المسائي والصباحي الموازي</h2>
+                                </div>
                             </div>
-                            <div class="bento-title-group">
-                                <span class="bento-sub-badge badge-ql">استكشاف فوري للمواد</span>
-                                <h2 class="bento-card-title">النظرة السريعة وشجرة الارتباطات</h2>
+
+                            <p class="bento-card-desc">
+                                احسب أجور القسط السنوي أو أجور مادة معينة للدراسة المسائية والصباحي الموازي، مع إمكانية تطبيق نسبة التخفيض والخصم فورياً.
+                            </p>
+
+                            <div class="bento-chips-list">
+                                <div class="bento-chip">
+                                    <span class="chip-icon">🔀</span>
+                                    <span>نمطان للاحتساب: بإجمالي الوحدات أو بمادة محددة</span>
+                                </div>
+                                <div class="bento-chip">
+                                    <span class="chip-icon">🏷️</span>
+                                    <span>تطبيق التخفيضات الرسمية المعتمدة</span>
+                                </div>
+                                <div class="bento-chip">
+                                    <span class="chip-icon">📅</span>
+                                    <span>احتساب الأجور لعام دراسي واحد وفق معيار 60 وحدة</span>
+                                </div>
+                            </div>
+
+                            <div class="bento-action-wrapper">
+                                <button id="btnOpenTuitionCalc" class="btn-bento-action btn-bento-tuition" type="button">
+                                    <span class="btn-content">
+                                        <span class="btn-icon">💳</span>
+                                        <span class="btn-text">فتح حاسبة الأقساط</span>
+                                    </span>
+                                    <span class="btn-arrow-icon">←</span>
+                                    <span class="btn-shine-sweep"></span>
+                                </button>
                             </div>
                         </div>
 
-                        <p class="bento-card-desc">
-                            استكشف شبكة المواد التمهيدية مباشرة دون الحاجة لبدء محاكاة، وافحص تأثير الحرمان المباشر والمتسلسل لأي مادة في الخطة.
-                        </p>
+                        <!-- Bento Card 2: Fees Calculator Mode (Additional Attempts) -->
+                        <div class="bento-card bento-fees-card">
+                            <div class="bento-card-glow glow-fees"></div>
+                            <div class="bento-card-header">
+                                <div class="bento-icon-box icon-fees">
+                                    <span>💰</span>
+                                </div>
+                                <div class="bento-title-group">
+                                    <span class="bento-sub-badge badge-fees">احتساب الرسوم</span>
+                                    <h2 class="bento-card-title">حاسبة أجور المحاولتين الأمتحانيتين الإضافيتين</h2>
+                                </div>
+                            </div>
 
-                        <div class="bento-chips-list">
-                            <div class="bento-chip">
-                                <span class="chip-icon">🔑</span>
-                                <span>كشف المواد التمهيدية لكل مادة</span>
-                            </div>
-                            <div class="bento-chip">
-                                <span class="chip-icon">🚨</span>
-                                <span>معرفة المواد المرتبطة بالكورس القادم والكورسات اللاحقة</span>
-                            </div>
-                            <div class="bento-chip">
-                                <span class="chip-icon">⛓️</span>
-                                <span>تتبع سلاسل الاعتماد الأكاديمي التراكمي</span>
-                            </div>
-                        </div>
+                            <p class="bento-card-desc">
+                                احسب الرسوم المالية المقررة للمحاولتين الإضافيتين لكل مادة دراسية وفق ضوابط مسار بولونيا ونوع الدراسة.
+                            </p>
 
-                        <div class="bento-action-wrapper">
-                            <button id="btnOpenQuickLook" class="btn-bento-action btn-bento-ql" type="button">
-                                <span class="btn-content">
-                                    <span class="btn-icon">🔍</span>
-                                    <span class="btn-text">نظرة سريعة</span>
-                                </span>
-                                <span class="btn-arrow-icon">←</span>
-                                <span class="btn-shine-sweep"></span>
-                            </button>
+                            <div class="bento-chips-list">
+                                <div class="bento-chip">
+                                    <span class="chip-icon">⚡</span>
+                                    <span>حساب فوري حسب نوع الدراسة</span>
+                                </div>
+                                <div class="bento-chip">
+                                    <span class="chip-icon">📘</span>
+                                    <span>حساب بحسب المعتمد في دليل مسار بولونيا</span>
+                                </div>
+                                <div class="bento-chip">
+                                    <span class="chip-icon">📐</span>
+                                    <span>بيان لمعادلة الحساب</span>
+                                </div>
+                            </div>
+
+                            <div class="bento-action-wrapper">
+                                <button id="btnOpenFeesCalc" class="btn-bento-action btn-bento-fees" type="button">
+                                    <span class="btn-content">
+                                        <span class="btn-icon">💰</span>
+                                        <span class="btn-text">فتح حاسبة الأجور</span>
+                                    </span>
+                                    <span class="btn-arrow-icon">←</span>
+                                    <span class="btn-shine-sweep"></span>
+                                </button>
+                            </div>
                         </div>
                     </div>
-
-                    <!-- Bento Card 3: Fees Calculator Mode -->
-                    <div class="bento-card bento-fees-card">
-                        <div class="bento-card-glow glow-fees"></div>
-                        <div class="bento-card-header">
-                            <div class="bento-icon-box icon-fees">
-                                <span>💰</span>
-                            </div>
-                            <div class="bento-title-group">
-                                <span class="bento-sub-badge badge-fees">احتساب الرسوم</span>
-                                <h2 class="bento-card-title">حاسبة أجور المحاولتين الأمتحانيتين الإضافيتين</h2>
-                            </div>
-                        </div>
-
-                        <p class="bento-card-desc">
-                            احسب الرسوم المالية المقررة للمحاولتين الإضافيتين لكل مادة دراسية وفق ضوابط مسار بولونيا ونوع الدراسة.
-                        </p>
-
-                        <div class="bento-chips-list">
-                            <div class="bento-chip">
-                                <span class="chip-icon">⚡</span>
-                                <span>حساب فوري حسب نوع الدراسة</span>
-                            </div>
-                            <div class="bento-chip">
-                                <span class="chip-icon">📘</span>
-                                <span>حساب بحسب المعتمد في دليل مسار بولونيا</span>
-                            </div>
-                            <div class="bento-chip">
-                                <span class="chip-icon">📐</span>
-                                <span>بيان لمعادلة الحساب</span>
-                            </div>
-                        </div>
-
-                        <div class="bento-action-wrapper">
-                            <button id="btnOpenFeesCalc" class="btn-bento-action btn-bento-fees" type="button">
-                                <span class="btn-content">
-                                    <span class="btn-icon">💰</span>
-                                    <span class="btn-text">فتح حاسبة الأجور</span>
-                                </span>
-                                <span class="btn-arrow-icon">←</span>
-                                <span class="btn-shine-sweep"></span>
-                            </button>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </section>
@@ -490,6 +546,200 @@
             <!-- Results View Area -->
             <div id="feesResultsArea" class="fees-results-area">
                 <!-- Dynamically populated by JS -->
+            </div>
+        </section>
+
+        <!-- Tuition Fees Calculator Screen (حاسبة أقساط المسائي والصباحي الموازي) -->
+        <section id="tuitionCalculatorScreen" class="tuition-calculator-screen-card" style="display: none;">
+            <div class="quick-look-header-bar tuition-header-bar">
+                <div class="quick-look-title-group">
+                    <div class="quick-look-badge badge-tuition-header">
+                        <span class="badge-dot"></span>
+                        <span>أجور القسط الدراسي • الدراسة المسائية والصباحي الموازي</span>
+                    </div>
+                    <h2 class="quick-look-title">💳 حاسبة أقساط المسائي والصباحي الموازي</h2>
+                    <p class="quick-look-subtitle">
+                        احسب قيمة القسط الدراسي المستحق بدقة بالاعتماد على إجمالي عدد الوحدات المسجلة أو لمادة دراسية مفردة، مع إمكانية تطبيق نسبة التخفيض.
+                    </p>
+                </div>
+                <button id="btnBackFromTuitionCalc" class="btn-back-home" type="button">
+                    <span>🔙 العودة للرئيسية</span>
+                </button>
+            </div>
+
+            <!-- Top Segmented Switch Button (التبديل بين النمطين) -->
+            <div class="tuition-switch-container">
+                <div class="tuition-switch-wrapper" role="tablist">
+                    <button type="button" class="tuition-switch-btn active" id="btnTuitionModeUnits" role="tab" aria-selected="true">
+                        <span class="switch-icon">📊</span>
+                        <span class="switch-title">بالاعتماد على عدد الوحدات</span>
+                    </button>
+                    <button type="button" class="tuition-switch-btn" id="btnTuitionModeSubject" role="tab" aria-selected="false">
+                        <span class="switch-icon">📚</span>
+                        <span class="switch-title">احتساب أجور مادة معينة</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mode 1: Units Calculation View -->
+            <div id="tuitionUnitsView" class="tuition-view-section">
+                <div class="quick-look-selectors-box tuition-selectors-box">
+                    <div class="selector-field">
+                        <label for="tuitionUnitsStudyType">🏛️ نوع الدراسة:</label>
+                        <div class="custom-select-wrapper">
+                            <select id="tuitionUnitsStudyType" class="ql-select-input">
+                                <option value="evening" selected>مسائي</option>
+                                <option value="morning_parallel">صباحي (خاص / موازي)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="tuition-units-inputs-grid">
+                        <div class="selector-field">
+                            <label for="tuitionCourse1Units">📘 عدد وحدات الكورس الأول (الحد الأقصى 30):</label>
+                            <div class="input-with-unit-wrapper">
+                                <input type="text" id="tuitionCourse1Units" class="ql-select-input tuition-text-input" value="30" inputmode="numeric" placeholder="الحد الأقصى 30">
+                                <span class="input-unit-tag">وحدة</span>
+                            </div>
+                        </div>
+
+                        <div class="selector-field">
+                            <label for="tuitionCourse2Units">📗 عدد وحدات الكورس الثاني (الحد الأقصى 30):</label>
+                            <div class="input-with-unit-wrapper">
+                                <input type="text" id="tuitionCourse2Units" class="ql-select-input tuition-text-input" value="30" inputmode="numeric" placeholder="الحد الأقصى 30">
+                                <span class="input-unit-tag">وحدة</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Discount Section for Units View -->
+                    <div class="tuition-discount-card">
+                        <div class="discount-toggle-row">
+                            <label class="modern-toggle-label" for="tuitionUnitsDiscountToggle">
+                                <input type="checkbox" id="tuitionUnitsDiscountToggle" class="modern-toggle-checkbox">
+                                <span class="modern-toggle-slider"></span>
+                                <span class="toggle-text">🏷️ هل يوجد تخفيض / خصم على القسط؟</span>
+                            </label>
+                        </div>
+                        <div id="tuitionUnitsDiscountBox" class="discount-input-reveal" style="display: none;">
+                            <div class="discount-selector-field">
+                                <label for="tuitionUnitsDiscountType">📋 نوع الخصم:</label>
+                                <div class="custom-select-wrapper">
+                                    <select id="tuitionUnitsDiscountType" class="ql-select-input">
+                                        <option value="" disabled selected>اختر الخصم</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="tuitionUnitsCustomDiscountWrapper" class="discount-input-field" style="display: none;">
+                                <label for="tuitionUnitsDiscountPercent">نسبة الخصم (الحد الأقصى 100%):</label>
+                                <div class="input-with-unit-wrapper discount-percent-wrapper">
+                                    <input type="text" id="tuitionUnitsDiscountPercent" class="ql-select-input tuition-text-input" value="10" inputmode="numeric" placeholder="الحد 100">
+                                    <span class="input-unit-tag">%</span>
+                                </div>
+                            </div>
+
+                            <!-- Second Discount Option (يظهر بعد تفعيل زر الخصم) -->
+                            <div id="tuitionUnitsDiscount2Container" class="second-discount-container" style="width: 100%;">
+                                <div class="discount-toggle-row second-discount-toggle-row">
+                                    <label class="modern-toggle-label" for="tuitionUnitsDiscount2Toggle">
+                                        <input type="checkbox" id="tuitionUnitsDiscount2Toggle" class="modern-toggle-checkbox">
+                                        <span class="modern-toggle-slider"></span>
+                                        <span class="toggle-text">➕ هل يوجد خصم ثانٍ؟</span>
+                                    </label>
+                                </div>
+                                <div id="tuitionUnitsDiscount2Box" class="discount-input-reveal second-discount-reveal" style="display: none;">
+                                    <div class="discount-selector-field">
+                                        <label for="tuitionUnitsDiscount2Type">📋 نوع الخصم الثاني:</label>
+                                        <div class="custom-select-wrapper">
+                                            <select id="tuitionUnitsDiscount2Type" class="ql-select-input">
+                                                <option value="" disabled selected>اختر الخصم الثاني</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div id="tuitionUnitsCustomDiscount2Wrapper" class="discount-input-field" style="display: none;">
+                                        <label for="tuitionUnitsDiscount2Percent">نسبة الخصم الثاني (الحد الأقصى 100%):</label>
+                                        <div class="input-with-unit-wrapper discount-percent-wrapper">
+                                            <input type="text" id="tuitionUnitsDiscount2Percent" class="ql-select-input tuition-text-input" value="10" inputmode="numeric" placeholder="الحد 100">
+                                            <span class="input-unit-tag">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Postponement Section for Units View (تأجيل لعام دراسي) -->
+                    <div class="tuition-discount-card tuition-postpone-card">
+                        <div class="discount-toggle-row">
+                            <label class="modern-toggle-label" for="tuitionPostponeToggle">
+                                <input type="checkbox" id="tuitionPostponeToggle" class="modern-toggle-checkbox">
+                                <span class="modern-toggle-slider"></span>
+                                <span class="toggle-text">⏸️ هل يوجد تأجيل لعام دراسي؟ (إضافة 10% رسوم تأجيل)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Units Results Area -->
+                <div id="tuitionUnitsResultsArea" class="fees-results-area tuition-results-area">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Mode 2: Subject Calculation View -->
+            <div id="tuitionSubjectView" class="tuition-view-section" style="display: none;">
+                <div class="quick-look-selectors-box tuition-selectors-box">
+                    <div class="fees-selectors-top-row">
+                        <div class="selector-field">
+                            <label for="tuitionSubStudyType">🏛️ نوع الدراسة:</label>
+                            <div class="custom-select-wrapper">
+                                <select id="tuitionSubStudyType" class="ql-select-input">
+                                    <option value="evening" selected>مسائي</option>
+                                    <option value="morning_parallel">صباحي (خاص / موازي)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="selector-field">
+                            <label for="tuitionSubStageSelect">🎓 المرحلة الدراسية:</label>
+                            <div class="custom-select-wrapper">
+                                <select id="tuitionSubStageSelect" class="ql-select-input">
+                                    <option value="" disabled selected>اختر المرحلة</option>
+                                    <option value="1">المرحلة الأولى</option>
+                                    <option value="2">المرحلة الثانية</option>
+                                    <option value="3">المرحلة الثالثة</option>
+                                    <option value="4">المرحلة الرابعة</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="selector-field">
+                            <label for="tuitionSubCourseSelect">📘 الكورس:</label>
+                            <div class="custom-select-wrapper">
+                                <select id="tuitionSubCourseSelect" class="ql-select-input">
+                                    <option value="" disabled selected>اختر الكورس</option>
+                                    <option value="1">الكورس الأول</option>
+                                    <option value="2">الكورس الثاني</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="selector-field subject-field-full">
+                        <label for="tuitionSubSubjectSelect">📚 اختر المادة الدراسية:</label>
+                        <div class="custom-select-wrapper">
+                            <select id="tuitionSubSubjectSelect" class="ql-select-input ql-select-subject fees-select-subject">
+                                <option value="" disabled selected>اختر المادة</option>
+                                <!-- Dynamically filled -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject Results Area -->
+                <div id="tuitionSubResultsArea" class="fees-results-area tuition-results-area">
+                    <!-- Populated by JS -->
+                </div>
             </div>
         </section>
 

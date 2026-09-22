@@ -24,21 +24,21 @@ const curriculumData = [
   { code: "CSC12009", nameAr: "الاحتمالية و الاحصاء", nameEn: "Probability and Statistics", sem: 2, ects: 2, prereq: [] },
   { code: "UOB101", nameAr: "اللغة العربية 1", nameEn: "Arabic Language I", sem: 2, ects: 2, prereq: [] },
   
-  // Stage 2 - Course 1 (Semester 3) - [English 2: UOB202]
+  // Stage 2 - Course 1 (Semester 3) - [Baath Regime Crimes: UOB105]
   { code: "CSC23110", nameAr: "هياكل بيانات", nameEn: "Data Structures", sem: 3, ects: 6, prereq: ["CSC12105"] },
   { code: "CSC23111", nameAr: "برمجة كيانية", nameEn: "Object Oriented Programming", sem: 3, ects: 6, prereq: ["CSC12105"] },
   { code: "CSC23112", nameAr: "طرائق عددية", nameEn: "Numerical Methods", sem: 3, ects: 5, prereq: ["CSC11004"] },
   { code: "CSC23113", nameAr: "النظرية الاحتسابية", nameEn: "Computation Theory", sem: 3, ects: 5, prereq: ["CSC12006"] },
   { code: "CSC23114", nameAr: "برمجة مرئية", nameEn: "Visual Programming", sem: 3, ects: 6, prereq: ["CSC12105"] },
-  { code: "UOB202", nameAr: "اللغة الانكليزية 2", nameEn: "English Language II", sem: 3, ects: 2, prereq: [] },
+  { code: "UOB105", nameAr: "جرائم نظام البعث في العراق", nameEn: "Baath Regime Crimes in Iraq", sem: 3, ects: 2, prereq: [] },
   
-  // Stage 2 - Course 2 (Semester 4) - [Baath Regime Crimes: UOB105]
+  // Stage 2 - Course 2 (Semester 4) - [English 2: UOB202]
   { code: "CSC24115", nameAr: "تصميم و تحليل الخوارزميات", nameEn: "Algorithms Design and Analysis", sem: 4, ects: 7, prereq: ["CSC23110"] },
   { code: "CSC24116", nameAr: "لغة للأغراض العامة", nameEn: "General-Purpose Language", sem: 4, ects: 7, prereq: ["CSC23111"] },
   { code: "CSC24117", nameAr: "مترجمات", nameEn: "Compilers", sem: 4, ects: 6, prereq: ["CSC23113", "CSC12105"] },
   { code: "CSC24018", nameAr: "تصميم و برمجة الويب", nameEn: "Web Design and Programming", sem: 4, ects: 6, prereq: [] },
   { code: "UOB201", nameAr: "اللغة العربية 2", nameEn: "Arabic Language II", sem: 4, ects: 2, prereq: [] },
-  { code: "UOB105", nameAr: "جرائم نظام البعث في العراق", nameEn: "Baath Regime Crimes in Iraq", sem: 4, ects: 2, prereq: [] },
+  { code: "UOB202", nameAr: "اللغة الانكليزية 2", nameEn: "English Language II", sem: 4, ects: 2, prereq: [] },
   
   // Stage 3 - Course 1 (Semester 5)
   { code: "CSC35119", nameAr: "ذكاء اصطناعي", nameEn: "Artificial Intelligence", sem: 5, ects: 6, prereq: ["CSC12006", "CSC24115", "CSC24116"] },

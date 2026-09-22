@@ -1548,6 +1548,12 @@ body {
     border-color: #fde68a;
 }
 
+.math-step-tag.tag-hosting {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #86efac;
+}
+
 /* --------------------------------------------------------------------------
    0.3 Tuition Fees Calculator Styles (المسائي والصباحي الموازي)
    -------------------------------------------------------------------------- */
@@ -1875,6 +1881,39 @@ body {
     border: 1px solid #ccfbf1;
 }
 
+/* Hosting Card (استضافة من المسائي إلى الصباحي) */
+.tuition-hosting-card {
+    border-color: #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.tuition-hosting-card.active-hosting {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1.5px solid #86efac;
+    box-shadow: 0 4px 15px -2px rgba(22, 163, 74, 0.12);
+}
+
+.tuition-hosting-card.active-hosting .toggle-text {
+    color: #166534;
+}
+
+.tuition-hosting-card.active-hosting .modern-toggle-slider {
+    background-color: #16a34a;
+}
+
+.tuition-pill-hosting {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #bbf7d0;
+    background: rgba(22, 163, 74, 0.25);
+    border: 1px solid rgba(134, 239, 172, 0.35);
+    padding: 0.2rem 0.65rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
 /* Postpone Card */
 .tuition-postpone-card {
     border-color: #e2e8f0;
@@ -1944,6 +1983,37 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
+.breakdown-category-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #475569;
+    padding: 0.35rem 0.65rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-top: 0.25rem;
+}
+
+.breakdown-category-header:first-child {
+    margin-top: 0;
+}
+
+.breakdown-category-header.category-extras {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #92400e;
+}
+
+.breakdown-category-header.category-discounts {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
 .breakdown-item {
     display: flex;
     flex-direction: column;
@@ -1965,6 +2035,57 @@ body {
 
 .breakdown-discount-val {
     color: #16a34a;
+}
+
+.breakdown-item.breakdown-item-center {
+    grid-column: 1 / -1;
+    align-items: center;
+    text-align: center;
+}
+
+.breakdown-grand-final-box {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+    border: 1.5px solid #5eead4;
+    border-radius: 10px;
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.25rem;
+    margin-top: 0.35rem;
+    box-shadow: 0 2px 10px rgba(13, 148, 136, 0.08);
+}
+
+.grand-final-label {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #0f766e;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.grand-final-val-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.45rem;
+}
+
+.grand-final-number {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #0d9488;
+}
+
+.grand-final-curr {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #115e59;
 }
 
 .tuition-discount-banner {

@@ -3015,6 +3015,16 @@ function resetTuitionCalculator() {
     if (customDiscount2Wrapper) customDiscount2Wrapper.style.display = 'none';
     if (unitsDiscount2Percent) unitsDiscount2Percent.value = '10';
 
+    const hostingToggle = document.getElementById('tuitionHostingToggle');
+    const hostingCard = document.getElementById('tuitionHostingCard');
+    if (hostingToggle) {
+        hostingToggle.checked = false;
+    }
+    if (hostingCard) {
+        hostingCard.classList.remove('active-hosting');
+        hostingCard.style.display = 'block';
+    }
+
     const postponeToggle = document.getElementById('tuitionPostponeToggle');
     if (postponeToggle) {
         postponeToggle.checked = false;
@@ -3152,6 +3162,7 @@ function openTuitionCalculatorScreen(pushState = true) {
             const d2Val = urlParams.get('d2') || urlParams.get('discount2');
             const p2Val = urlParams.get('p2') || urlParams.get('percent2');
             const postponeVal = urlParams.get('postpone');
+            const hostingVal = urlParams.get('hosting');
 
             const discountToggle = document.getElementById('tuitionUnitsDiscountToggle');
             const discountBox = document.getElementById('tuitionUnitsDiscountBox');
@@ -3195,6 +3206,22 @@ function openTuitionCalculatorScreen(pushState = true) {
                     } else {
                         if (custom2Wrapper) custom2Wrapper.style.display = 'none';
                     }
+                }
+            }
+
+            // Hosting - only available for evening study
+            const hostingToggle = document.getElementById('tuitionHostingToggle');
+            const hostingCard = document.getElementById('tuitionHostingCard');
+            const isEvening = (studyTypeVal === 'evening');
+            if (hostingCard) {
+                hostingCard.style.display = isEvening ? 'block' : 'none';
+            }
+            if (hostingToggle) {
+                const isHosted = isEvening && (hostingVal === '1' || hostingVal === 'true');
+                hostingToggle.checked = isHosted;
+                if (hostingCard) {
+                    if (isHosted) hostingCard.classList.add('active-hosting');
+                    else hostingCard.classList.remove('active-hosting');
                 }
             }
 
@@ -3288,6 +3315,10 @@ function calculateAndRenderTuitionUnits() {
         }
     }
 
+    const hostingToggle = document.getElementById('tuitionHostingToggle');
+    const hasHosting = (studyType === 'evening') && hostingToggle && hostingToggle.checked;
+    const hostingFee = hasHosting ? Math.round(baseFee * 0.25) : 0;
+
     const postponeToggle = document.getElementById('tuitionPostponeToggle');
     const hasPostpone = postponeToggle ? postponeToggle.checked : false;
     const postponeFee = hasPostpone ? Math.round(baseFee * 0.10) : 0;
@@ -3301,7 +3332,7 @@ function calculateAndRenderTuitionUnits() {
     const totalDiscountAmount = discount1Amount + discount2Amount;
     const anyDiscountActive = (hasDiscount && discountPercent > 0);
     const bothDiscountsActive = anyDiscountActive && (hasDiscount2 && discount2Percent > 0);
-    const finalGrandTotal = finalFeeUnits + postponeFee;
+    const finalGrandTotal = finalFeeUnits + postponeFee + hostingFee;
 
     const extraParams = {
         c1: c1,
@@ -3319,6 +3350,9 @@ function calculateAndRenderTuitionUnits() {
             extraParams.p2 = discount2Percent;
         }
     }
+    if (hasHosting) {
+        extraParams.hosting = '1';
+    }
     if (hasPostpone) {
         extraParams.postpone = '1';
     }
@@ -3328,6 +3362,8 @@ function calculateAndRenderTuitionUnits() {
             history.replaceState({ screen: 'tuition-calc', mode: 'units', type: studyType, ...extraParams }, '', getAppPath('tuition-calc', '', studyType, 'units', extraParams));
         }
     } catch (e) {}
+
+    const hasSingleExtra = (hasHosting && !hasPostpone) || (!hasHosting && hasPostpone);
 
     resultsArea.innerHTML = `
         <div class="ql-target-card tuition-target-card">
@@ -3346,6 +3382,9 @@ function calculateAndRenderTuitionUnits() {
                 <span class="ql-pill-ects">مجموع ${totalUnits} وحدة</span>
                 <span class="tuition-pill-study">🏛️ ${studyTypeName}</span>
                 <span class="ql-pill-stage">💵 القسط السنوي: ${formatNumberIQD(baseFee)} د.ع</span>
+                ${hasHosting ? `
+                    <span class="tuition-pill-hosting">🏫 استضافة للصباحي (+${formatNumberIQD(hostingFee)} د.ع)</span>
+                ` : ''}
                 ${hasPostpone ? `
                     <span class="tuition-pill-postpone">⏸️ تأجيل عام (+${formatNumberIQD(postponeFee)} د.ع)</span>
                 ` : ''}
@@ -3355,11 +3394,19 @@ function calculateAndRenderTuitionUnits() {
         <div class="fees-grand-total-box">
             ${bothDiscountsActive ? `
                 <div class="tuition-discount-banner">
-                    <span>🎉 تم تطبيق الخصم الأول (${discountPercent}%) والخصم الثاني (${discount2Percent}%) - ${finalFeeUnits === 0 ? 'إعفاء تام من أجور الوحدات' : `إجمالي المخصوم: ${formatNumberIQD(totalDiscountAmount)} دينار`}${hasPostpone ? ' • مع رسوم تأجيل' : ''}</span>
+                    <span>🎉 تم تطبيق الخصم الأول (${discountPercent}%) والخصم الثاني (${discount2Percent}%) - ${finalFeeUnits === 0 ? 'إعفاء تام من أجور الوحدات' : `إجمالي المخصوم: ${formatNumberIQD(totalDiscountAmount)} دينار`}${hasHosting ? ' • مع رسوم استضافة' : ''}${hasPostpone ? ' • مع رسوم تأجيل' : ''}</span>
                 </div>
             ` : (anyDiscountActive ? `
                 <div class="tuition-discount-banner">
-                    <span>🎉 تم تطبيق ${discountLabel || 'الخصم'} (${discountPercent}%) - ${finalFeeUnits === 0 ? 'إعفاء تام من أجور الوحدات' : `المبلغ المخصوم: ${formatNumberIQD(discount1Amount)} دينار`}${hasPostpone ? ' • مع رسوم تأجيل' : ''}</span>
+                    <span>🎉 تم تطبيق ${discountLabel || 'الخصم'} (${discountPercent}%) - ${finalFeeUnits === 0 ? 'إعفاء تام من أجور الوحدات' : `المبلغ المخصوم: ${formatNumberIQD(discount1Amount)} دينار`}${hasHosting ? ' • مع رسوم استضافة' : ''}${hasPostpone ? ' • مع رسوم تأجيل' : ''}</span>
+                </div>
+            ` : (hasHosting && hasPostpone ? `
+                <div class="tuition-discount-banner" style="background: #f0fdf4; color: #166534; border-color: #86efac;">
+                    <span>🏫 تم احتساب رسوم الاستضافة للصباحي: ${formatNumberIQD(hostingFee)} د.ع ورسوم التأجيل: ${formatNumberIQD(postponeFee)} د.ع</span>
+                </div>
+            ` : (hasHosting ? `
+                <div class="tuition-discount-banner" style="background: #f0fdf4; color: #166534; border-color: #86efac;">
+                    <span>🏫 تم احتساب رسوم الاستضافة إلى الدراسة الصباحية: ${formatNumberIQD(hostingFee)} دينار (+25% من القسط الكلي)</span>
                 </div>
             ` : (hasPostpone ? `
                 <div class="tuition-discount-banner" style="background: #fef3c7; color: #92400e; border-color: #fcd34d;">
@@ -3369,12 +3416,12 @@ function calculateAndRenderTuitionUnits() {
                 <div class="tuition-discount-banner" style="background: #fef9c3; color: #854d0e; border-color: #fde047;">
                     <span>🏷️ يرجى اختيار نوع الخصم لتطبيقه على القسط</span>
                 </div>
-            ` : '')))}
+            ` : '')))))}
 
             <span class="fees-total-badge">💰 المبلغ الإجمالي المطلوب للقسط الدراسي</span>
             <div class="fees-total-number-row">
                 ${anyDiscountActive ? `
-                    <span class="tuition-strike-price">${formatNumberIQD(baseCalculated + postponeFee)} د.ع</span>
+                    <span class="tuition-strike-price">${formatNumberIQD(baseCalculated + postponeFee + hostingFee)} د.ع</span>
                 ` : ''}
                 <span class="fees-total-number">${formatNumberIQD(finalGrandTotal)}</span>
                 <span class="fees-currency-symbol">دينار عراقي</span>
@@ -3383,47 +3430,72 @@ function calculateAndRenderTuitionUnits() {
                 <span>(فقط ${tafqeetIQD(finalGrandTotal)} لا غير)</span>
             </div>
 
-            ${(anyDiscountActive || hasPostpone) ? `
+            ${(anyDiscountActive || hasPostpone || hasHosting) ? `
                 <div class="tuition-discount-breakdown-card">
-                    <div class="breakdown-item">
+                    <!-- تصنيف: الأجور الأساسية -->
+                    <div class="breakdown-category-header">
+                        <span>🏛️ الأجور الدراسية الأساسية</span>
+                    </div>
+                    <div class="breakdown-item breakdown-item-center">
                         <span class="breakdown-label">أجور الوحدات (${totalUnits} وحدة):</span>
                         <span class="breakdown-val">${formatNumberIQD(baseCalculated)} د.ع</span>
                     </div>
-                    ${anyDiscountActive && !bothDiscountsActive ? `
-                        <div class="breakdown-item">
-                            <span class="breakdown-label">قيمة الخصم المستقطعة (${discountPercent}%):</span>
-                            <span class="breakdown-val breakdown-discount-val">-${formatNumberIQD(discount1Amount)} د.ع</span>
-                        </div>
-                    ` : ''}
-                    ${bothDiscountsActive ? `
-                        <div class="breakdown-item">
-                            <span class="breakdown-label">قيمة الخصم الأول (${discountPercent}%):</span>
-                            <span class="breakdown-val breakdown-discount-val">-${formatNumberIQD(discount1Amount)} د.ع</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <span class="breakdown-label">المتبقي بعد الخصم الأول:</span>
-                            <span class="breakdown-val">${formatNumberIQD(afterDiscount1)} د.ع</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <span class="breakdown-label">قيمة الخصم الثاني (${discount2Percent}% من المتبقي):</span>
-                            <span class="breakdown-val breakdown-discount-val">-${formatNumberIQD(discount2Amount)} د.ع</span>
-                        </div>
-                    ` : ''}
+
+                    <!-- تصنيف: الخصومات والتخفيضات المستقطعة -->
                     ${anyDiscountActive ? `
-                        <div class="breakdown-item">
-                            <span class="breakdown-label">صافي أجور الوحدات بعد الخصم:</span>
-                            <span class="breakdown-val" style="color: #0d9488;">${formatNumberIQD(finalFeeUnits)} د.ع</span>
+                        <div class="breakdown-category-header category-discounts">
+                            <span>🏷️ الخصومات والتخفيضات المستقطعة</span>
+                        </div>
+                        ${bothDiscountsActive ? `
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">قيمة الخصم الأول (${discountPercent}%):</span>
+                                <span class="breakdown-val breakdown-discount-val">-${formatNumberIQD(discount1Amount)} د.ع</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">المتبقي بعد الخصم الأول:</span>
+                                <span class="breakdown-val">${formatNumberIQD(afterDiscount1)} د.ع</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">قيمة الخصم الثاني (${discount2Percent}% من المتبقي):</span>
+                                <span class="breakdown-val breakdown-discount-val">-${formatNumberIQD(discount2Amount)} د.ع</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">المتبقي بعد الخصم الثاني:</span>
+                                <span class="breakdown-val" style="color: #0d9488;">${formatNumberIQD(finalFeeUnits)} د.ع</span>
+                            </div>
+                        ` : ''}
+                        <div class="breakdown-item breakdown-item-center">
+                            <span class="breakdown-label">إجمالي المخصوم${!bothDiscountsActive ? ` (${discountPercent}%)` : ''}:</span>
+                            <span class="breakdown-val breakdown-discount-val">-${formatNumberIQD(totalDiscountAmount)} د.ع</span>
                         </div>
                     ` : ''}
-                    ${hasPostpone ? `
-                        <div class="breakdown-item">
-                            <span class="breakdown-label">رسوم تأجيل العام الدراسي (10% من القسط):</span>
-                            <span class="breakdown-val" style="color: #d97706;">+${formatNumberIQD(postponeFee)} د.ع</span>
+
+                    <!-- تصنيف: الأجور والرسوم الإضافية -->
+                    ${(hasHosting || hasPostpone) ? `
+                        <div class="breakdown-category-header category-extras">
+                            <span>➕ الأجور والرسوم الإضافية</span>
                         </div>
+                        ${hasHosting ? `
+                            <div class="breakdown-item ${hasSingleExtra ? 'breakdown-item-center' : ''}">
+                                <span class="breakdown-label">رسوم الاستضافة إلى الصباحي (25% من القسط الكلي):</span>
+                                <span class="breakdown-val" style="color: #15803d;">+${formatNumberIQD(hostingFee)} د.ع</span>
+                            </div>
+                        ` : ''}
+                        ${hasPostpone ? `
+                            <div class="breakdown-item ${hasSingleExtra ? 'breakdown-item-center' : ''}">
+                                <span class="breakdown-label">رسوم تأجيل العام الدراسي (10% من القسط):</span>
+                                <span class="breakdown-val" style="color: #d97706;">+${formatNumberIQD(postponeFee)} د.ع</span>
+                            </div>
+                        ` : ''}
                     ` : ''}
-                    <div class="breakdown-item" style="grid-column: 1 / -1; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                        <span class="breakdown-label">المبلغ النهائي الصافي المطلوب:</span>
-                        <span class="breakdown-val" style="color: #0d9488; font-size: 1.25rem;">${formatNumberIQD(finalGrandTotal)} د.ع</span>
+
+                    <!-- سطر المجموع الصافي النهائي -->
+                    <div class="breakdown-grand-final-box">
+                        <span class="grand-final-label">💰 المبلغ الصافي النهائي المطلوب:</span>
+                        <div class="grand-final-val-row">
+                            <span class="grand-final-number">${formatNumberIQD(finalGrandTotal)}</span>
+                            <span class="grand-final-curr">دينار عراقي</span>
+                        </div>
                     </div>
                 </div>
             ` : ''}
@@ -3450,6 +3522,10 @@ function calculateAndRenderTuitionUnits() {
                                 <span class="fees-math-op">-</span>
                                 <span class="fees-math-token">الخصم الثاني <bdi>(${discount2Percent}% من المتبقي)</bdi></span>
                             ` : ''}
+                            ${hasHosting ? `
+                                <span class="fees-math-op">+</span>
+                                <span class="fees-math-token">رسوم الاستضافة <bdi>(25%)</bdi></span>
+                            ` : ''}
                             ${hasPostpone ? `
                                 <span class="fees-math-op">+</span>
                                 <span class="fees-math-token">رسوم التأجيل <bdi>(10%)</bdi></span>
@@ -3470,13 +3546,13 @@ function calculateAndRenderTuitionUnits() {
                                 <div class="tuition-math-step-row">
                                     <span class="math-step-calc">(${totalUnits} / 60) × ${formatNumberIQD(baseFee)} د.ع</span>
                                     <span class="math-step-eq">=</span>
-                                    <span class="math-step-val">${formatNumberIQD(baseCalculated)} د.ع</span>
+                                    <span class="math-step-val ${(!anyDiscountActive && !hasHosting && !hasPostpone) ? 'final-val' : ''}">${formatNumberIQD(baseCalculated)} د.ع</span>
                                 </div>
                                 ${anyDiscountActive && !bothDiscountsActive ? `
                                     <div class="tuition-math-step-row discount-row">
                                         <span class="math-step-calc">${formatNumberIQD(baseCalculated)} - ${formatNumberIQD(discount1Amount)} <span class="math-step-tag" dir="rtl">[خصم: ${discountPercent}%]</span></span>
                                         <span class="math-step-eq">=</span>
-                                        <span class="math-step-val ${hasPostpone ? '' : 'final-val'}">${formatNumberIQD(finalFeeUnits)} د.ع</span>
+                                        <span class="math-step-val ${(!hasHosting && !hasPostpone) ? 'final-val' : ''}">${formatNumberIQD(finalFeeUnits)} د.ع</span>
                                     </div>
                                 ` : ''}
                                 ${bothDiscountsActive ? `
@@ -3488,12 +3564,19 @@ function calculateAndRenderTuitionUnits() {
                                     <div class="tuition-math-step-row discount-row">
                                         <span class="math-step-calc">${formatNumberIQD(afterDiscount1)} - ${formatNumberIQD(discount2Amount)} <span class="math-step-tag tag-second" dir="rtl">[خصم ثانٍ: ${discount2Percent}%]</span></span>
                                         <span class="math-step-eq">=</span>
-                                        <span class="math-step-val ${hasPostpone ? '' : 'final-val'}">${formatNumberIQD(finalFeeUnits)} د.ع</span>
+                                        <span class="math-step-val ${(!hasHosting && !hasPostpone) ? 'final-val' : ''}">${formatNumberIQD(finalFeeUnits)} د.ع</span>
+                                    </div>
+                                ` : ''}
+                                ${hasHosting ? `
+                                    <div class="tuition-math-step-row hosting-row">
+                                        <span class="math-step-calc">${formatNumberIQD(finalFeeUnits)} + ${formatNumberIQD(hostingFee)} <span class="math-step-tag tag-hosting" dir="rtl">[رسوم استضافة: 25%]</span></span>
+                                        <span class="math-step-eq">=</span>
+                                        <span class="math-step-val ${hasPostpone ? '' : 'final-val'}">${formatNumberIQD(finalFeeUnits + hostingFee)} د.ع</span>
                                     </div>
                                 ` : ''}
                                 ${hasPostpone ? `
                                     <div class="tuition-math-step-row postpone-row">
-                                        <span class="math-step-calc">${formatNumberIQD(finalFeeUnits)} + ${formatNumberIQD(postponeFee)} <span class="math-step-tag tag-postpone" dir="rtl">[رسوم تأجيل: 10%]</span></span>
+                                        <span class="math-step-calc">${formatNumberIQD(finalFeeUnits + hostingFee)} + ${formatNumberIQD(postponeFee)} <span class="math-step-tag tag-postpone" dir="rtl">[رسوم تأجيل: 10%]</span></span>
                                         <span class="math-step-eq">=</span>
                                         <span class="math-step-val final-val">${formatNumberIQD(finalGrandTotal)} د.ع</span>
                                     </div>
@@ -3782,9 +3865,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // Units Mode Inputs (Reactive Text Inputs)
     const tuitionUnitsStudyType = document.getElementById('tuitionUnitsStudyType');
     if (tuitionUnitsStudyType) {
-        populateTuitionDiscounts(tuitionUnitsStudyType.value || 'evening');
+        const initialStudy = tuitionUnitsStudyType.value || 'evening';
+        populateTuitionDiscounts(initialStudy);
+        const hostingCardInit = document.getElementById('tuitionHostingCard');
+        if (hostingCardInit) {
+            hostingCardInit.style.display = (initialStudy === 'evening') ? 'block' : 'none';
+        }
         tuitionUnitsStudyType.addEventListener('change', () => {
-            populateTuitionDiscounts(tuitionUnitsStudyType.value);
+            const currentStudy = tuitionUnitsStudyType.value;
+            populateTuitionDiscounts(currentStudy);
+            const hostingCard = document.getElementById('tuitionHostingCard');
+            const hostingToggle = document.getElementById('tuitionHostingToggle');
+            if (currentStudy === 'evening') {
+                if (hostingCard) hostingCard.style.display = 'block';
+            } else {
+                if (hostingCard) {
+                    hostingCard.style.display = 'none';
+                    hostingCard.classList.remove('active-hosting');
+                }
+                if (hostingToggle) {
+                    hostingToggle.checked = false;
+                }
+            }
             calculateAndRenderTuitionUnits();
         });
     }
@@ -3905,6 +4007,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const val = parseFloat(clean);
             if (!isNaN(val) && val > 100) {
                 tuitionUnitsDiscount2Percent.value = '100';
+            }
+            calculateAndRenderTuitionUnits();
+        });
+    }
+
+    // Hosting Toggle Listener (استضافة من المسائي إلى الصباحي)
+    const tuitionHostingToggle = document.getElementById('tuitionHostingToggle');
+    if (tuitionHostingToggle) {
+        tuitionHostingToggle.addEventListener('change', () => {
+            const card = tuitionHostingToggle.closest('.tuition-hosting-card');
+            if (card) {
+                if (tuitionHostingToggle.checked) card.classList.add('active-hosting');
+                else card.classList.remove('active-hosting');
             }
             calculateAndRenderTuitionUnits();
         });

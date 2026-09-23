@@ -1716,6 +1716,39 @@ function renderCourseColumnHTML(semNum, semHistory, colTitle) {
 // --------------------------------------------------------------------------
 // 4. Welcome Screen & Main Workspace Controls
 // --------------------------------------------------------------------------
+/**
+ * Updates dynamic page metadata (Title, Description, Open Graph & Discord Embed tags)
+ * Purely text-based (no images) optimized for rich previews.
+ */
+function updateAppMetadata(title, description, themeColor = '#0284c7') {
+    if (!title) return;
+
+    // 1. Browser Window & Tab Title
+    document.title = title;
+
+    // 2. Standard Search Engine Meta Description
+    const metaDesc = document.getElementById('metaDescription') || document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute('content', description);
+
+    // 3. Open Graph Metadata (Discord, WhatsApp, Telegram)
+    const ogTitle = document.getElementById('ogTitle') || document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+
+    const ogDesc = document.getElementById('ogDescription') || document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', description);
+
+    // 4. Twitter / Discord Summary Card
+    const twTitle = document.getElementById('twitterTitle') || document.querySelector('meta[name="twitter:title"]');
+    if (twTitle) twTitle.setAttribute('content', title);
+
+    const twDesc = document.getElementById('twitterDescription') || document.querySelector('meta[name="twitter:description"]');
+    if (twDesc) twDesc.setAttribute('content', description);
+
+    // 5. Discord Left Accent Border Color
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', themeColor);
+}
+
 // Helper to generate clean, server-safe SPA URLs without 404 Cannot GET errors
 function getAppPath(screen, subjectCode = '', studyType = '', mode = '', extraParams = {}) {
     if (screen === 'workspace' || screen === 'simulation') {
@@ -1779,6 +1812,12 @@ function startSimulation(pushState = true) {
         if (shouldPush) {
             history.pushState({ screen: 'workspace' }, '', getAppPath('simulation'));
         }
+
+        updateAppMetadata(
+            'محاكي مسار بولونيا الأكاديمي | قسم علوم الحاسوب - جامعة بغداد',
+            'مخطط المسار الأكاديمي التفاعلي لتخطيط تسجيل المقررات وفحص المتطلبات المسبقة والرسوب التكويني وسقف 30 ECTS فصلياً وفق لوائح مسار بولونيا.',
+            '#0284c7'
+        );
     }
 }
 
@@ -1819,6 +1858,12 @@ function showWelcomeScreen(pushState = true) {
         if (shouldPush) {
             history.pushState({ screen: 'welcome' }, '', getAppPath('welcome'));
         }
+
+        updateAppMetadata(
+            'محاكي مسار بولونيا | جامعة بغداد - قسم علوم الحاسوب',
+            'محاكي أكاديمي ذكي لتخطيط المقررات، فحص المتطلبات المسبقة، تتبع الرسوب التكويني واحتساب وحدات ECTS والأقساط الدراسية.',
+            '#0284c7'
+        );
     }
 }
 
@@ -2360,6 +2405,13 @@ function renderQuickLookResults() {
         history.replaceState({ screen: 'quick-look', subject: selectedCode }, '', getAppPath('quick-look', selectedCode));
     } catch (e) {}
 
+    // Dynamic Metadata for Quick Look Subject (Discord & Social Previews)
+    const prereqListStr = subject.prereq && subject.prereq.length > 0 ? subject.prereq.join('، ') : 'بدون متطلب سابق';
+    const qlStageNum = Math.ceil(subject.sem / 2);
+    const qlTitle = `مادة ${subject.nameAr} (${subject.code}) | النظرة السريعة`;
+    const qlDesc = `مقرر ${subject.nameAr} (${subject.nameEn}) - المرحلة ${qlStageNum} (${fullOriginName}) • ${subject.ects} وحدات ECTS • المتطلبات: ${prereqListStr}${directDependents.length > 0 ? ` • حرمان مباشر: ${directDependents.length} مواد` : ''}${indirectDependents.length > 0 ? ` • حرمان متسلسل: ${indirectDependents.length} مواد` : ''}.`;
+    updateAppMetadata(qlTitle, qlDesc, '#0284c7');
+
     container.innerHTML = `
         <div class="ql-target-card">
             <div class="ql-target-header">
@@ -2745,6 +2797,11 @@ function calculateAndRenderFees() {
     try {
         history.replaceState({ screen: 'fees-calc', subject: selectedCode, type: studyType }, '', getAppPath('fees-calc', selectedCode, studyType));
     } catch (e) {}
+
+    // Dynamic Metadata for Fees Subject (Discord & Social Previews)
+    const feesTitle = `أجور مادة ${subject.nameAr} (${subject.code}) | ${studyTypeName}`;
+    const feesDesc = `المبلغ المطلوب لأجور مادة ${subject.nameAr} (${subject.nameEn}): ${formatNumberIQD(totalFee)} د.ع للدراسة ${studyTypeName} • عدد وحدات المقرر: ${subject.ects} وحدات ECTS (${fullOriginName}).`;
+    updateAppMetadata(feesTitle, feesDesc, '#0284c7');
 
     resultsArea.innerHTML = `
         <div class="ql-target-card fees-target-card">
@@ -3363,6 +3420,20 @@ function calculateAndRenderTuitionUnits() {
         }
     } catch (e) {}
 
+    // Dynamic Metadata for Tuition Units (Discord & Social Previews)
+    const extraPills = [];
+    if (hasHosting) extraPills.push('استضافة للصباحي (+25%)');
+    if (hasPostpone) extraPills.push('تأجيل عام (+10%)');
+    if (bothDiscountsActive) {
+        extraPills.push(`خصم (${discountPercent}% + ${discount2Percent}%)`);
+    } else if (anyDiscountActive) {
+        extraPills.push(`خصم (${discountPercent}%)`);
+    }
+    const extraPillsStr = extraPills.length > 0 ? ` • ${extraPills.join(' و ')}` : '';
+    const tuitionTitle = `حاسبة الأقساط: ${studyTypeName} (${totalUnits} وحدة) • ${formatNumberIQD(finalGrandTotal)} د.ع`;
+    const tuitionDesc = `المبلغ المطلوب للقسط الدراسي: ${formatNumberIQD(finalGrandTotal)} د.ع (فقط ${tafqeetIQD(finalGrandTotal)}) للدراسة ${studyTypeName} بإجمالي ${totalUnits} وحدة ECTS (كورس 1: ${c1} وحدة، كورس 2: ${c2} وحدة)${extraPillsStr}.`;
+    updateAppMetadata(tuitionTitle, tuitionDesc, '#0284c7');
+
     const hasSingleExtra = (hasHosting && !hasPostpone) || (!hasHosting && hasPostpone);
 
     resultsArea.innerHTML = `
@@ -3722,6 +3793,11 @@ function calculateAndRenderTuitionSubject() {
             history.replaceState({ screen: 'tuition-calc', mode: 'subject', subject: selectedCode, type: studyType }, '', getAppPath('tuition-calc', selectedCode, studyType, 'subject'));
         }
     } catch (e) {}
+
+    // Dynamic Metadata for Tuition Subject (Discord & Social Previews)
+    const subTuitionTitle = `أجور مادة ${subject.nameAr} (${subject.code}) | ${studyTypeName}`;
+    const subTuitionDesc = `المبلغ المطلوب لأجور مادة ${subject.nameAr} (${subject.nameEn}): ${formatNumberIQD(totalFee)} د.ع (فقط ${tafqeetIQD(totalFee)}) للدراسة ${studyTypeName} • عبء المادة: ${subject.ects} وحدات ECTS من أصل 60 وحدة سنوية (${fullOriginName}).`;
+    updateAppMetadata(subTuitionTitle, subTuitionDesc, '#0284c7');
 
     resultsArea.innerHTML = `
         <div class="ql-target-card tuition-target-card">

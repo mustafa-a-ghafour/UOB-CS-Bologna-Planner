@@ -243,6 +243,17 @@
         white-space: normal;
     }
 
+    .tuition-stages-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .stages-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.35rem;
+    }
+
     .tuition-discount-breakdown-card {
         grid-template-columns: 1fr;
         gap: 0.75rem;

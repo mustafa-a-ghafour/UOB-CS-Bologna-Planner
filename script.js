@@ -451,6 +451,10 @@ function initSimulation() {
     simulationState.maxExtraYearsIncurred = 0;
     simulationState.isDismissed = false;
 
+    currentSimulationStagesData = [];
+    const stagesSec = document.getElementById('tuitionSimulationStagesSection');
+    if (stagesSec) stagesSec.style.display = 'none';
+
     setupSemesterRegistration(1);
     renderSimulationUI();
 }
@@ -1533,6 +1537,14 @@ function openFullGraduationTranscriptModal() {
                     <span class="grad-stat-val" style="${totalFailuresCount > 0 ? 'color:#be123c;' : 'color:#15803d;'}">${totalFailuresCount === 0 ? '✨ مسار طبيعي (0)' : `${totalFailuresCount} مواد`}</span>
                 </div>
             </div>
+
+            <div class="grad-dashboard-actions">
+                <button id="btnGradToTuitionCalc" class="btn-grad-tuition-action" type="button">
+                    <span class="btn-icon">💳</span>
+                    <span class="btn-text">الذهاب لاحتساب الأقساط لكل سنة دراسية</span>
+                    <span class="btn-arrow">⬅️</span>
+                </button>
+            </div>
         </div>
     `;
 
@@ -1594,6 +1606,15 @@ function openFullGraduationTranscriptModal() {
     }
 
     container.innerHTML = fullPagesHTML;
+
+    // Attach click listener for tuition calculation button
+    const btnGradToTuition = document.getElementById('btnGradToTuitionCalc');
+    if (btnGradToTuition) {
+        btnGradToTuition.addEventListener('click', () => {
+            openTuitionCalculatorFromGraduation();
+        });
+    }
+
     modal.style.display = 'flex';
 }
 
@@ -3304,6 +3325,240 @@ function closeTuitionCalculatorScreen(pushState = true) {
     showWelcomeScreen(pushState);
 }
 
+// --------------------------------------------------------------------------
+// Simulation Stages & Tuition Calculator Integration
+// --------------------------------------------------------------------------
+let currentSimulationStagesData = [];
+let activeTuitionStageIndex = 0;
+
+/**
+ * Extracts academic stages and their registered units from simulation history
+ */
+function extractSimulationStagesForTuition() {
+    let highestSemWithModules = 0;
+    for (let semKey in simulationState.history) {
+        const hist = simulationState.history[semKey];
+        if (Array.isArray(hist) && hist.length > 0) {
+            highestSemWithModules = Math.max(highestSemWithModules, Number(semKey));
+        }
+    }
+
+    let totalStages = 4;
+    if (highestSemWithModules > 8) {
+        totalStages = Math.ceil(highestSemWithModules / 2);
+    }
+
+    const stages = [];
+    for (let stageNum = 1; stageNum <= totalStages; stageNum++) {
+        const sem1 = (stageNum * 2) - 1;
+        const sem2 = stageNum * 2;
+
+        const hist1 = simulationState.history[sem1] || [];
+        const hist2 = simulationState.history[sem2] || [];
+
+        // Skip stages beyond stage 4 if they don't contain modules
+        if (stageNum > 4 && hist1.length === 0 && hist2.length === 0) {
+            continue;
+        }
+
+        let c1Units = hist1.reduce((sum, item) => sum + (curriculumMap[item.code]?.ects || 0), 0);
+        let c2Units = hist2.reduce((sum, item) => sum + (curriculumMap[item.code]?.ects || 0), 0);
+
+        // Fallback to standard curriculum units if hist is empty for standard 4 stages
+        if (c1Units === 0 && stageNum <= 4) {
+            c1Units = curriculumData.filter(c => c.sem === sem1).reduce((sum, c) => sum + c.ects, 0) || 30;
+        }
+        if (c2Units === 0 && stageNum <= 4) {
+            c2Units = curriculumData.filter(c => c.sem === sem2).reduce((sum, c) => sum + c.ects, 0) || 30;
+        }
+
+        const rawName = getStageName(stageNum);
+        const cleanName = rawName.replace(/[⚠️🎓]/g, '').trim();
+
+        stages.push({
+            stageNum: stageNum,
+            stageName: cleanName,
+            c1Units: c1Units,
+            c2Units: c2Units,
+            totalUnits: c1Units + c2Units
+        });
+    }
+
+    return stages;
+}
+
+/**
+ * Renders the stage rectangles / cards inside the tuition calculator
+ */
+function renderTuitionSimulationStages(stages, activeIndex = 0) {
+    const section = document.getElementById('tuitionSimulationStagesSection');
+    const grid = document.getElementById('tuitionStagesCardsGrid');
+    if (!section || !grid) return;
+
+    if (!stages || stages.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    currentSimulationStagesData = stages;
+    activeTuitionStageIndex = activeIndex;
+
+    section.style.display = 'flex';
+
+    grid.innerHTML = stages.map((stg, idx) => {
+        const isActive = (idx === activeIndex);
+        return `
+            <div class="tuition-stage-card ${isActive ? 'active-stage' : ''}" id="tuitionStageCard_${idx}" data-stage-index="${idx}">
+                <div class="stage-card-header">
+                    <span class="stage-card-title">🎓 ${stg.stageName}</span>
+                    <span class="stage-card-total-badge">${stg.totalUnits} وحدة</span>
+                </div>
+                <div class="stage-card-details">
+                    <div class="stage-card-detail-item">
+                        <span class="detail-label">📘 الكورس الأول:</span>
+                        <span class="detail-value">${stg.c1Units} وحدة</span>
+                    </div>
+                    <div class="stage-card-detail-item">
+                        <span class="detail-label">📗 الكورس الثاني:</span>
+                        <span class="detail-value">${stg.c2Units} وحدة</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-stage-apply ${isActive ? 'applied' : ''}" id="btnStageApply_${idx}" data-stage-index="${idx}">
+                    ${isActive ? '✓ تم التطبيق' : 'تطبيق'}
+                </button>
+            </div>
+        `;
+    }).join('');
+
+    // Attach click listeners to all stage apply buttons
+    stages.forEach((stg, idx) => {
+        const btn = document.getElementById(`btnStageApply_${idx}`);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                applyTuitionStage(idx);
+            });
+        }
+    });
+}
+
+/**
+ * Applies a specific stage's units to tuition calculator inputs
+ */
+function applyTuitionStage(targetIndex) {
+    if (!currentSimulationStagesData || !currentSimulationStagesData[targetIndex]) return;
+
+    activeTuitionStageIndex = targetIndex;
+    const stage = currentSimulationStagesData[targetIndex];
+
+    // Toggle button and card styles (active becomes green "تم التطبيق", others blue "تطبيق")
+    currentSimulationStagesData.forEach((stg, idx) => {
+        const card = document.getElementById(`tuitionStageCard_${idx}`);
+        const btn = document.getElementById(`btnStageApply_${idx}`);
+        if (idx === targetIndex) {
+            if (card) card.classList.add('active-stage');
+            if (btn) {
+                btn.classList.add('applied');
+                btn.innerHTML = '✓ تم التطبيق';
+            }
+        } else {
+            if (card) card.classList.remove('active-stage');
+            if (btn) {
+                btn.classList.remove('applied');
+                btn.innerHTML = 'تطبيق';
+            }
+        }
+    });
+
+    // Populate units inputs
+    const c1Input = document.getElementById('tuitionCourse1Units');
+    const c2Input = document.getElementById('tuitionCourse2Units');
+
+    if (c1Input) c1Input.value = stage.c1Units;
+    if (c2Input) c2Input.value = stage.c2Units;
+
+    // Visual feedback highlight
+    [c1Input, c2Input].forEach(inp => {
+        if (inp) {
+            inp.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+            inp.style.borderColor = '#16a34a';
+            inp.style.boxShadow = '0 0 0 3px rgba(22, 163, 74, 0.25)';
+            setTimeout(() => {
+                inp.style.borderColor = '';
+                inp.style.boxShadow = '';
+            }, 600);
+        }
+    });
+
+    // Recalculate tuition
+    calculateAndRenderTuitionUnits();
+}
+
+/**
+ * Syncs stage buttons state if the user manually types in the inputs
+ */
+function syncStageButtonsWithInputs() {
+    if (!currentSimulationStagesData || currentSimulationStagesData.length === 0) return;
+    const c1Input = document.getElementById('tuitionCourse1Units');
+    const c2Input = document.getElementById('tuitionCourse2Units');
+    if (!c1Input || !c2Input) return;
+
+    const c1Val = parseFloat(c1Input.value.replace(/[^0-9.]/g, '')) || 0;
+    const c2Val = parseFloat(c2Input.value.replace(/[^0-9.]/g, '')) || 0;
+
+    let matchedIdx = -1;
+    currentSimulationStagesData.forEach((stg, idx) => {
+        if (stg.c1Units === c1Val && stg.c2Units === c2Val) {
+            matchedIdx = idx;
+        }
+    });
+
+    currentSimulationStagesData.forEach((stg, idx) => {
+        const card = document.getElementById(`tuitionStageCard_${idx}`);
+        const btn = document.getElementById(`btnStageApply_${idx}`);
+        if (idx === matchedIdx) {
+            if (card) card.classList.add('active-stage');
+            if (btn) {
+                btn.classList.add('applied');
+                btn.innerHTML = '✓ تم التطبيق';
+            }
+        } else {
+            if (card) card.classList.remove('active-stage');
+            if (btn) {
+                btn.classList.remove('applied');
+                btn.innerHTML = 'تطبيق';
+            }
+        }
+    });
+}
+
+/**
+ * Opens Tuition Calculator Screen from Graduation Page with imported stages
+ */
+function openTuitionCalculatorFromGraduation() {
+    const stages = extractSimulationStagesForTuition();
+
+    // Close graduation transcript preview modal
+    closeFullGraduationTranscriptModal();
+
+    // Open tuition calculator screen
+    openTuitionCalculatorScreen(true);
+
+    // Ensure mode is units
+    switchTuitionMode('units', false);
+
+    // Render stages and apply Stage 1 by default
+    renderTuitionSimulationStages(stages, 0);
+    applyTuitionStage(0);
+
+    // Scroll smoothly to stages section
+    const stagesSec = document.getElementById('tuitionSimulationStagesSection');
+    if (stagesSec) {
+        setTimeout(() => {
+            stagesSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
+    }
+}
+
 function calculateAndRenderTuitionUnits() {
     const resultsArea = document.getElementById('tuitionUnitsResultsArea');
     if (!resultsArea) return;
@@ -3976,6 +4231,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tuitionCourse1Units.value = '30';
             }
             calculateAndRenderTuitionUnits();
+            syncStageButtonsWithInputs();
         });
     }
 
@@ -3988,6 +4244,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tuitionCourse2Units.value = '30';
             }
             calculateAndRenderTuitionUnits();
+            syncStageButtonsWithInputs();
         });
     }
 
@@ -4215,6 +4472,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnCloseModal) {
         btnCloseModal.addEventListener('click', () => {
             closeFullGraduationTranscriptModal();
+        });
+    }
+
+    const btnToolbarTuition = document.getElementById('btnToolbarToTuitionCalc');
+    if (btnToolbarTuition) {
+        btnToolbarTuition.addEventListener('click', () => {
+            openTuitionCalculatorFromGraduation();
         });
     }
 

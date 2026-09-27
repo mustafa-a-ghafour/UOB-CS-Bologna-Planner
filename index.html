@@ -605,6 +605,20 @@
                         </div>
                     </div>
 
+                    <!-- Stages from Completed Simulation Track (appears when coming from graduation) -->
+                    <div id="tuitionSimulationStagesSection" class="tuition-stages-section" style="display: none;">
+                        <div class="stages-section-header">
+                            <div class="stages-header-title">
+                                <span class="stages-header-icon">📑</span>
+                                <span>مراحل المسار الدراسي المنجز:</span>
+                            </div>
+                            <span class="stages-header-hint">اختر مرحلة لتطبيق عدد وحداتها تلقائيًا</span>
+                        </div>
+                        <div id="tuitionStagesCardsGrid" class="tuition-stages-grid">
+                            <!-- Populated dynamically by JavaScript -->
+                        </div>
+                    </div>
+
                     <div class="tuition-units-inputs-grid">
                         <div class="selector-field">
                             <label for="tuitionCourse1Units">📘 عدد وحدات الكورس الأول (الحد الأقصى 30):</label>
@@ -964,6 +978,9 @@
                     <span>مسار الطالب الشامل (نظام بولونيا)</span>
                 </div>
                 <div class="toolbar-actions">
+                    <button id="btnToolbarToTuitionCalc" class="btn-toolbar-tuition" type="button">
+                        💳 احتساب الأقساط
+                    </button>
                     <button id="btnExportImage" class="btn-export-png" onclick="exportTranscriptAsImage('gradModalTranscriptContent')">
                         📸 تحميل المسار كصورة (PNG)
                     </button>

@@ -259,6 +259,31 @@
         gap: 0.75rem;
     }
 
+    .reg-selectors-row {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .reg-courses-grid {
+        grid-template-columns: 1fr;
+        gap: 0.85rem;
+    }
+
+    .btn-add-reg-subject {
+        width: 100%;
+    }
+
+    .reg-module-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.65rem;
+    }
+
+    .reg-module-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
     .discount-input-reveal {
         flex-direction: column;
         align-items: flex-start;

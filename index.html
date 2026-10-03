@@ -249,7 +249,7 @@
                                 </div>
                                 <div class="bento-chip">
                                     <span class="chip-icon">📜</span>
-                                    <span>تصدير مسار الطالب النهائي كصور</span>
+                                    <span>تصدير مسار الطالب النهائي كصور أو تحويل المسار لاحتساب الأقساط في حاسبة الأقساط</span>
                                 </div>
                             </div>
 
@@ -336,13 +336,13 @@
                             </div>
 
                             <p class="bento-card-desc">
-                                احسب أجور القسط السنوي أو أجور مادة معينة للدراسة المسائية والصباحي الموازي، مع إمكانية تطبيق نسبة التخفيض والخصم فورياً.
+                                احسب أجور القسط السنوي أو المواد المسجلة أو مادة معينة للدراسة المسائية والصباحي الموازي، مع إمكانية تطبيق نسبة التخفيض والخصم فورياً.
                             </p>
 
                             <div class="bento-chips-list">
                                 <div class="bento-chip">
                                     <span class="chip-icon">🔀</span>
-                                    <span>نمطان للاحتساب: بإجمالي الوحدات أو بمادة محددة</span>
+                                    <span>3 أنماط للاحتساب: بإجمالي الوحدات أو المواد المسجلة أو بمادة محددة</span>
                                 </div>
                                 <div class="bento-chip">
                                     <span class="chip-icon">🏷️</span>
@@ -350,7 +350,7 @@
                                 </div>
                                 <div class="bento-chip">
                                     <span class="chip-icon">📅</span>
-                                    <span>احتساب الأجور لعام دراسي واحد وفق معيار 60 وحدة</span>
+                                    <span>احتساب الأجور لعام دراسي واحد وفق معيار 60 وحدة من خلال: عدد الوحدات، اختيار المواد، او تحويل المسار من المحاكي بعد انهاء المحاكاة</span>
                                 </div>
                             </div>
 
@@ -570,7 +570,7 @@
                     </div>
                     <h2 class="quick-look-title">💳 حاسبة أقساط المسائي والصباحي الموازي</h2>
                     <p class="quick-look-subtitle">
-                        احسب قيمة القسط الدراسي المستحق بدقة بالاعتماد على إجمالي عدد الوحدات المسجلة أو لمادة دراسية مفردة، مع إمكانية تطبيق نسبة التخفيض.
+                        احسب قيمة القسط الدراسي المستحق بدقة بالاعتماد على إجمالي عدد الوحدات، أو قائمة المواد المسجلة، أو لمادة دراسية مفردة، مع إمكانية تطبيق نسبة التخفيض.
                     </p>
                 </div>
                 <button id="btnBackFromTuitionCalc" class="btn-back-home" type="button">
@@ -578,12 +578,16 @@
                 </button>
             </div>
 
-            <!-- Top Segmented Switch Button (التبديل بين النمطين) -->
+            <!-- Top Segmented Switch Button (التبديل بين الأنماط الثلاثة) -->
             <div class="tuition-switch-container">
                 <div class="tuition-switch-wrapper" role="tablist">
                     <button type="button" class="tuition-switch-btn active" id="btnTuitionModeUnits" role="tab" aria-selected="true">
                         <span class="switch-icon">📊</span>
                         <span class="switch-title">بالاعتماد على عدد الوحدات</span>
+                    </button>
+                    <button type="button" class="tuition-switch-btn" id="btnTuitionModeRegistered" role="tab" aria-selected="false">
+                        <span class="switch-icon">📋</span>
+                        <span class="switch-title">بالاعتماد على المواد المسجلة</span>
                     </button>
                     <button type="button" class="tuition-switch-btn" id="btnTuitionModeSubject" role="tab" aria-selected="false">
                         <span class="switch-icon">📚</span>
@@ -602,20 +606,6 @@
                                 <option value="evening" selected>مسائي</option>
                                 <option value="morning_parallel">صباحي (خاص / موازي)</option>
                             </select>
-                        </div>
-                    </div>
-
-                    <!-- Stages from Completed Simulation Track (appears when coming from graduation) -->
-                    <div id="tuitionSimulationStagesSection" class="tuition-stages-section" style="display: none;">
-                        <div class="stages-section-header">
-                            <div class="stages-header-title">
-                                <span class="stages-header-icon">📑</span>
-                                <span>مراحل المسار الدراسي المنجز:</span>
-                            </div>
-                            <span class="stages-header-hint">اختر مرحلة لتطبيق عدد وحداتها تلقائيًا</span>
-                        </div>
-                        <div id="tuitionStagesCardsGrid" class="tuition-stages-grid">
-                            <!-- Populated dynamically by JavaScript -->
                         </div>
                     </div>
 
@@ -722,7 +712,217 @@
                 </div>
             </div>
 
-            <!-- Mode 2: Subject Calculation View -->
+            <!-- Mode 2: Registered Subjects Calculation View (بالاعتماد على المواد المسجلة) -->
+            <div id="tuitionRegisteredView" class="tuition-view-section" style="display: none;">
+                <div class="quick-look-selectors-box tuition-selectors-box">
+                    <div class="selector-field">
+                        <label for="tuitionRegStudyType">🏛️ نوع الدراسة:</label>
+                        <div class="custom-select-wrapper">
+                            <select id="tuitionRegStudyType" class="ql-select-input">
+                                <option value="evening" selected>مسائي</option>
+                                <option value="morning_parallel">صباحي (خاص / موازي)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Stages from Completed Simulation Track (appears when coming from simulation) -->
+                    <div id="tuitionSimulationStagesSection" class="tuition-stages-section" style="display: none;">
+                        <div class="stages-section-header">
+                            <div class="stages-header-title">
+                                <span class="stages-header-icon">📑</span>
+                                <span>مراحل المسار الدراسي المنجز:</span>
+                            </div>
+                            <span class="stages-header-hint">اختر مرحلة لتطبيق موادها ووحداتها تلقائيًا</span>
+                        </div>
+                        <div id="tuitionStagesCardsGrid" class="tuition-stages-grid">
+                            <!-- Populated dynamically by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Add Subject Section -->
+                    <div id="tuitionRegAddSubjectCard" class="reg-subject-add-card">
+                        <div class="reg-card-header">
+                            <div class="reg-header-title">
+                                <span class="reg-header-icon">➕</span>
+                                <span>إضافة مادة إلى قائمة المواد المسجلة:</span>
+                            </div>
+                            <span class="reg-header-hint">اختر المرحلة والكورس ثم المادة واضغط على إضافة</span>
+                        </div>
+
+                        <div class="reg-selectors-row">
+                            <div class="selector-field">
+                                <label for="tuitionRegStageSelect">🎓 المرحلة الدراسية:</label>
+                                <div class="custom-select-wrapper">
+                                    <select id="tuitionRegStageSelect" class="ql-select-input">
+                                        <option value="" disabled selected>اختر المرحلة</option>
+                                        <option value="1">المرحلة الأولى</option>
+                                        <option value="2">المرحلة الثانية</option>
+                                        <option value="3">المرحلة الثالثة</option>
+                                        <option value="4">المرحلة الرابعة</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="selector-field">
+                                <label for="tuitionRegCourseSelect">📘 الكورس:</label>
+                                <div class="custom-select-wrapper">
+                                    <select id="tuitionRegCourseSelect" class="ql-select-input">
+                                        <option value="" disabled selected>اختر الكورس</option>
+                                        <option value="1">الكورس الأول</option>
+                                        <option value="2">الكورس الثاني</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="selector-field reg-subject-select-field">
+                                <label for="tuitionRegSubjectSelect">📚 اختر المادة الدراسية:</label>
+                                <div class="custom-select-wrapper">
+                                    <select id="tuitionRegSubjectSelect" class="ql-select-input ql-select-subject fees-select-subject">
+                                        <option value="" disabled selected>اختر المرحلة والكورس أولاً</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="selector-field reg-btn-add-field">
+                                <button type="button" id="btnAddRegSubject" class="btn-add-reg-subject">
+                                    <span>➕ إضافة المادة</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Registered Subjects List Box Card -->
+                    <!-- Registered Subjects List Box Card (مقسم لكورسين) -->
+                    <div class="reg-list-box-container">
+                        <div class="reg-list-header">
+                            <div class="reg-list-title-group">
+                                <span class="reg-list-icon">📋</span>
+                                <span class="reg-list-title">قائمة المواد المسجلة:</span>
+                                <span id="regListCountBadge" class="reg-count-badge">0 مواد • 0 / 60 وحدة</span>
+                            </div>
+                            <button type="button" id="btnClearAllRegSubjects" class="btn-clear-reg-list" style="display: none;" title="مسح جميع المواد من القائمة">
+                                <span>🗑️ تفريغ القائمة</span>
+                            </button>
+                        </div>
+
+                        <!-- Two-Course Grid for Course 1 & Course 2 -->
+                        <div class="reg-courses-grid">
+                            <!-- Course 1 Column -->
+                            <div class="reg-course-column">
+                                <div class="reg-course-col-header c1-header">
+                                    <div class="reg-course-col-title">
+                                        <span class="col-icon">📘</span>
+                                        <span>مواد الكورس الأول</span>
+                                    </div>
+                                    <span id="regCourse1Badge" class="reg-course-units-badge badge-c1">0 / 30 وحدة</span>
+                                </div>
+                                <div id="tuitionRegListBoxC1" class="tuition-registered-list-box course-list-box">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
+                            </div>
+
+                            <!-- Course 2 Column -->
+                            <div class="reg-course-column">
+                                <div class="reg-course-col-header c2-header">
+                                    <div class="reg-course-col-title">
+                                        <span class="col-icon">📗</span>
+                                        <span>مواد الكورس الثاني</span>
+                                    </div>
+                                    <span id="regCourse2Badge" class="reg-course-units-badge badge-c2">0 / 30 وحدة</span>
+                                </div>
+                                <div id="tuitionRegListBoxC2" class="tuition-registered-list-box course-list-box">
+                                    <!-- Populated dynamically by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Discount Section for Registered View -->
+                    <div class="tuition-discount-card">
+                        <div class="discount-toggle-row">
+                            <label class="modern-toggle-label" for="tuitionRegDiscountToggle">
+                                <input type="checkbox" id="tuitionRegDiscountToggle" class="modern-toggle-checkbox">
+                                <span class="modern-toggle-slider"></span>
+                                <span class="toggle-text">🏷️ هل يوجد تخفيض / خصم على القسط؟</span>
+                            </label>
+                        </div>
+                        <div id="tuitionRegDiscountBox" class="discount-input-reveal" style="display: none;">
+                            <div class="discount-selector-field">
+                                <label for="tuitionRegDiscountType">📋 نوع الخصم:</label>
+                                <div class="custom-select-wrapper">
+                                    <select id="tuitionRegDiscountType" class="ql-select-input">
+                                        <option value="" disabled selected>اختر الخصم</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="tuitionRegCustomDiscountWrapper" class="discount-input-field" style="display: none;">
+                                <label for="tuitionRegDiscountPercent">نسبة الخصم (الحد الأقصى 100%):</label>
+                                <div class="input-with-unit-wrapper discount-percent-wrapper">
+                                    <input type="text" id="tuitionRegDiscountPercent" class="ql-select-input tuition-text-input" value="10" inputmode="numeric" placeholder="الحد 100">
+                                    <span class="input-unit-tag">%</span>
+                                </div>
+                            </div>
+
+                            <!-- Second Discount Option -->
+                            <div id="tuitionRegDiscount2Container" class="second-discount-container" style="width: 100%;">
+                                <div class="discount-toggle-row second-discount-toggle-row">
+                                    <label class="modern-toggle-label" for="tuitionRegDiscount2Toggle">
+                                        <input type="checkbox" id="tuitionRegDiscount2Toggle" class="modern-toggle-checkbox">
+                                        <span class="modern-toggle-slider"></span>
+                                        <span class="toggle-text">➕ هل يوجد خصم ثانٍ؟</span>
+                                    </label>
+                                </div>
+                                <div id="tuitionRegDiscount2Box" class="discount-input-reveal second-discount-reveal" style="display: none;">
+                                    <div class="discount-selector-field">
+                                        <label for="tuitionRegDiscount2Type">📋 نوع الخصم الثاني:</label>
+                                        <div class="custom-select-wrapper">
+                                            <select id="tuitionRegDiscount2Type" class="ql-select-input">
+                                                <option value="" disabled selected>اختر الخصم الثاني</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div id="tuitionRegCustomDiscount2Wrapper" class="discount-input-field" style="display: none;">
+                                        <label for="tuitionRegDiscount2Percent">نسبة الخصم الثاني (الحد الأقصى 100%):</label>
+                                        <div class="input-with-unit-wrapper discount-percent-wrapper">
+                                            <input type="text" id="tuitionRegDiscount2Percent" class="ql-select-input tuition-text-input" value="10" inputmode="numeric" placeholder="الحد 100">
+                                            <span class="input-unit-tag">%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hosting Section for Registered View (استضافة من المسائي إلى الصباحي) -->
+                    <div id="tuitionRegHostingCard" class="tuition-discount-card tuition-hosting-card">
+                        <div class="discount-toggle-row">
+                            <label class="modern-toggle-label" for="tuitionRegHostingToggle">
+                                <input type="checkbox" id="tuitionRegHostingToggle" class="modern-toggle-checkbox">
+                                <span class="modern-toggle-slider"></span>
+                                <span class="toggle-text">🏫 هل توجد استضافة إلى الدراسة الصباحية؟ (إضافة 25% رسوم استضافة)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Postponement Section for Registered View (تأجيل لعام دراسي) -->
+                    <div class="tuition-discount-card tuition-postpone-card">
+                        <div class="discount-toggle-row">
+                            <label class="modern-toggle-label" for="tuitionRegPostponeToggle">
+                                <input type="checkbox" id="tuitionRegPostponeToggle" class="modern-toggle-checkbox">
+                                <span class="modern-toggle-slider"></span>
+                                <span class="toggle-text">⏸️ هل يوجد تأجيل لعام دراسي؟ (إضافة 10% رسوم تأجيل)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registered Results Area -->
+                <div id="tuitionRegResultsArea" class="fees-results-area tuition-results-area">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Mode 3: Subject Calculation View -->
             <div id="tuitionSubjectView" class="tuition-view-section" style="display: none;">
                 <div class="quick-look-selectors-box tuition-selectors-box">
                     <div class="fees-selectors-top-row">
